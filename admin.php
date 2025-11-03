@@ -34,6 +34,9 @@ if (isset($_POST['add_product'])) {
 
     $conn->query("INSERT INTO products (name, category, description, price, stock, image)
                   VALUES ('$name','$category','$desc','$price','$stock','$image')");
+    
+    header("Location: admin.php");
+    exit();
 }
 
 /* ---------------- DELETE PRODUCT ---------------- */
@@ -49,6 +52,9 @@ if (isset($_POST['delete_product'])) {
         }
         $conn->query("DELETE FROM products WHERE id = $pid");
     }
+    
+    header("Location: admin.php");
+    exit();
 }
 
 /* ---------------- UPDATE STOCK ---------------- */
@@ -56,6 +62,9 @@ if (isset($_POST['update_stock'])) {
     $pid = intval($_POST['product_id']);
     $new_stock = intval($_POST['new_stock']);
     $conn->query("UPDATE products SET stock = stock + $new_stock WHERE id = $pid");
+    
+    header("Location: admin.php");
+    exit();
 }
 
 /* ---------------- FETCH PRODUCTS ---------------- */
@@ -88,6 +97,15 @@ $products = $conn->query("SELECT * FROM products");
 function toggleMenu() {
   document.getElementById("navMenu").classList.toggle("active");
 }
+
+// Modal Functions
+function openAddProductModal() {
+  document.getElementById("addProductModal").style.display = "block";
+}
+
+function closeAddProductModal() {
+  document.getElementById("addProductModal").style.display = "none";
+}
 </script>
 
 <!-- PRODUCT MANAGEMENT -->
@@ -105,7 +123,6 @@ function toggleMenu() {
       <th>ID</th>
       <th>Name</th>
       <th>Category</th>
-      <th>Description</th>
       <th>Price</th>
       <th>Stock</th>
       <th>Image</th>
@@ -117,7 +134,6 @@ function toggleMenu() {
           <td><?= $p['id'] ?></td>
           <td><?= htmlspecialchars($p['name']) ?></td>
           <td><?= htmlspecialchars($p['category'] ?? 'N/A') ?></td>
-          <td><?= htmlspecialchars($p['description']) ?></td>
           <td>₱<?= number_format($p['price'], 2) ?></td>
           <td><?= $p['stock'] ?></td>
           <td>
@@ -186,11 +202,6 @@ function toggleMenu() {
         </select>
       </div>
 
-      <div class="form-group">
-        <label for="modal-description">Description</label>
-        <textarea id="modal-description" name="description" placeholder="Product Description" rows="3"></textarea>
-      </div>
-
       <div class="form-row">
         <div class="form-group">
           <label for="modal-price">Price</label>
@@ -212,6 +223,7 @@ function toggleMenu() {
         <button type="button" onclick="closeAddProductModal()" class="cancel-btn">Cancel</button>
         <button type="submit" name="add_product" class="submit-btn">Add Product</button>
       </div>
+      </div>
     </form>
   </div>
 </div>
@@ -227,15 +239,6 @@ document.getElementById("searchInput").addEventListener("keyup", function() {
     row.style.display = text.includes(filter) ? "" : "none";
   });
 });
-
-// Modal Functions
-function openAddProductModal() {
-  document.getElementById("addProductModal").style.display = "block";
-}
-
-function closeAddProductModal() {
-  document.getElementById("addProductModal").style.display = "none";
-}
 
 // Close modal when clicking outside of it
 window.onclick = function(event) {

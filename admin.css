@@ -619,6 +619,11 @@
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 15px;
+    margin-bottom: 20px;
+  }
+
+  .form-row .form-group {
+    margin-bottom: 0;
   }
 
   .modal-footer {
@@ -683,6 +688,7 @@
 
     .form-row {
       grid-template-columns: 1fr;
+      gap: 15px;
     }
 
     .modal-footer {
