@@ -181,7 +181,7 @@ function closeAddProductModal() {
       
       <div class="form-group">
         <label for="modal-category">Category</label>
-        <select id="modal-category" name="category" required>
+        <select id="modal-category" name="category">>
           <option value="">Select Category</option>
           <option value="Longspan">Longspan</option>
           <option value="Yero">Yero</option>
