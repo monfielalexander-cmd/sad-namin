@@ -120,31 +120,31 @@
       <div class="modal-content">
         <span class="close" onclick="closeModal('register-modal')">&times;</span>
         <h2>Create Account</h2>
-        <form method="POST" action="register.php">
+        <form method="POST" action="register.php" id="register-form" autocomplete="off">
           <input type="text" name="fname" placeholder="First Name" required>
           <input type="text" name="lname" placeholder="Last Name" required>
           <input type="text" name="address" placeholder="Address" required>
           <input type="email" name="email" placeholder="Email" required>
           <input type="text" name="username" placeholder="Username" required>
-    <div class="password-field">
+          <div class="password-field">
             <input id="register-password" type="password" name="password" placeholder="Password" required class="modal-input password-input">
-            <button type="button" class="password-toggle" onclick="togglePassword('register-password', this)" aria-pressed="false" aria-label="Show password" title="Show password"> 
+            <button type="button" class="password-toggle" onclick="togglePassword('register-password', this)" aria-pressed="false" aria-label="Show password" title="Show password">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                 <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z" stroke="#004080" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
                 <circle cx="12" cy="12" r="3" stroke="#004080" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
             </button>
           </div>
-          <!-- Confirm password -->
-    <div class="password-field">
+          <div class="password-field">
             <input id="register-password-confirm" type="password" name="password_confirm" placeholder="Confirm Password" required class="modal-input password-input">
-            <button type="button" class="password-toggle" onclick="togglePassword('register-password-confirm', this)" aria-pressed="false" aria-label="Show password" title="Show password"> 
+            <button type="button" class="password-toggle" onclick="togglePassword('register-password-confirm', this)" aria-pressed="false" aria-label="Show password" title="Show password">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                 <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z" stroke="#004080" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
                 <circle cx="12" cy="12" r="3" stroke="#004080" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
             </button>
           </div>
+          <div id="register-error" style="color:#c00; font-size:13px; min-height:18px; margin-bottom:2px; display:none;"></div>
           <button type="submit">Create Account</button>
           <p>Already have an account? <a href="#" onclick="switchModal('register-modal','login-modal'); return false;">Login</a></p>
         </form>
@@ -205,6 +205,35 @@
             '</svg>';
         }
       }
+
+      // Register form password match validation
+      document.addEventListener('DOMContentLoaded', function() {
+        var regForm = document.getElementById('register-form');
+        if (regForm) {
+          var pw = document.getElementById('register-password');
+          var pwc = document.getElementById('register-password-confirm');
+          var err = document.getElementById('register-error');
+          function checkMatch() {
+            if (pw.value && pwc.value && pw.value !== pwc.value) {
+              err.textContent = 'Passwords do not match.';
+              err.style.display = 'block';
+              return false;
+            } else {
+              err.textContent = '';
+              err.style.display = 'none';
+              return true;
+            }
+          }
+          pw.addEventListener('input', checkMatch);
+          pwc.addEventListener('input', checkMatch);
+          regForm.addEventListener('submit', function(e) {
+            if (!checkMatch()) {
+              pwc.focus();
+              e.preventDefault();
+            }
+          });
+        }
+      });
     </script>
 
   </body>

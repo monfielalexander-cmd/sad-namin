@@ -13,7 +13,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $fname = $conn->real_escape_string($_POST['fname']);
     $lname = $conn->real_escape_string($_POST['lname']);
     $address = $conn->real_escape_string($_POST['address']);
-    $contact = $conn->real_escape_string($_POST['contact']);
     $email = $conn->real_escape_string($_POST['email']);
     $username = $conn->real_escape_string($_POST['username']);
     $password = $conn->real_escape_string($_POST['password']);
@@ -29,18 +28,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     }
 
     // Insert new user
-    $sql = "INSERT INTO users (fname, lname, address, contact, email, username, password, role) 
-            VALUES ('$fname', '$lname', '$address', '$contact', '$email', '$username', '$password', '$role')";
+    $sql = "INSERT INTO users (fname, lname, address, email, username, password, role) 
+            VALUES ('$fname', '$lname', '$address', '$email', '$username', '$password', '$role')";
 
     if ($conn->query($sql) === TRUE) {
-        // Auto-login after successful registration
-        $user_id = $conn->insert_id;
-        $_SESSION['id'] = $user_id;
-        $_SESSION['username'] = $username;
-        $_SESSION['role'] = $role;
-
-        // Redirect to homepage
-        header("Location: index.php");
+        // Registration successful, redirect to index with success message
+        echo "<script>alert('Registration successful! Please log in.'); window.location='index.php';</script>";
         exit();
     } else {
         echo "<script>alert('Registration failed. Please try again.'); window.location='index.php';</script>";

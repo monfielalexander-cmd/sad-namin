@@ -110,13 +110,14 @@ function closeAddProductModal() {
 
 <!-- PRODUCT MANAGEMENT -->
 <div class="admin-panel" id="products">
-  <h3>Manage Products</h3>
 
-  <!-- Add Product Button -->
-  <button onclick="openAddProductModal()" class="add-product-btn">+ Add Product</button>
+  <!-- Add Product Button (moved above heading for visibility) -->
+  <button onclick="openAddProductModal()" class="add-product-btn" style="margin-bottom: 18px;">+ Add Product</button>
+
+  <h3 style="margin-top:0;">Manage Products</h3>
 
   <!-- 🔍 SEARCH BAR -->
-  <input type="text" id="searchInput" placeholder="Search product..." class="search-bar">
+  <input type="text" id="searchInput" placeholder="Search by name, category, price..." class="search-bar">
 
   <table class="product-table" id="productTable">
     <tr>
@@ -230,13 +231,17 @@ function closeAddProductModal() {
 
 <!-- 🔍 LIVE SEARCH -->
 <script>
-document.getElementById("searchInput").addEventListener("keyup", function() {
-  const filter = this.value.toLowerCase();
-  const rows = document.querySelectorAll("#productTable tr:not(:first-child)");
 
+// Improved search: matches any cell (name, category, price, etc.)
+document.getElementById("searchInput").addEventListener("keyup", function() {
+  const filter = this.value.trim().toLowerCase();
+  const rows = document.querySelectorAll("#productTable tr:not(:first-child)");
   rows.forEach(row => {
-    const text = row.textContent.toLowerCase();
-    row.style.display = text.includes(filter) ? "" : "none";
+    let match = false;
+    row.querySelectorAll('td').forEach(cell => {
+      if (cell.textContent.toLowerCase().includes(filter)) match = true;
+    });
+    row.style.display = match ? "" : "none";
   });
 });
 

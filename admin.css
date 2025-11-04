@@ -615,10 +615,11 @@
     font-family: 'Poppins', sans-serif;
   }
 
+
   .form-row {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 15px;
+    gap: 24px;
     margin-bottom: 20px;
   }
 
