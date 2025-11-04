@@ -1,42 +1,53 @@
 <?php
 session_start();
 
-// Database connection
+// ✅ Database Connection
 $conn = new mysqli("localhost", "root", "", "hardware_db");
 
-// Check connection
+// Check for connection errors
 if ($conn->connect_error) {
     die("Connection failed: " . $conn->connect_error);
 }
 
-if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $fname = $conn->real_escape_string($_POST['fname']);
-    $lname = $conn->real_escape_string($_POST['lname']);
-    $address = $conn->real_escape_string($_POST['address']);
-    $email = $conn->real_escape_string($_POST['email']);
-    $username = $conn->real_escape_string($_POST['username']);
-    $password = $conn->real_escape_string($_POST['password']);
+// ✅ Check if form was submitted
+if ($_SERVER["REQUEST_METHOD"] === "POST") {
+    // Escape user inputs to prevent SQL injection
+    $fname     = $conn->real_escape_string($_POST['fname']);
+    $lname     = $conn->real_escape_string($_POST['lname']);
+    $address   = $conn->real_escape_string($_POST['address']);
+    $email     = $conn->real_escape_string($_POST['email']);
+    $username  = $conn->real_escape_string($_POST['username']);
+    $password  = $conn->real_escape_string($_POST['password']);
+    $role      = 'customer'; // Default role for new users
 
-    // Default role for new users
-    $role = 'customer';
-
-    // Check if username already exists
+    // ✅ Check if username already exists
     $check = $conn->query("SELECT * FROM users WHERE username='$username'");
     if ($check->num_rows > 0) {
-        echo "<script>alert('Username already exists.'); window.location='index.php';</script>";
+        echo "<script>
+                alert('Username already exists.');
+                window.location='index.php';
+              </script>";
         exit();
     }
 
-    // Insert new user
+    // ✅ Insert new user into database
     $sql = "INSERT INTO users (fname, lname, address, email, username, password, role) 
             VALUES ('$fname', '$lname', '$address', '$email', '$username', '$password', '$role')";
 
     if ($conn->query($sql) === TRUE) {
-        // Registration successful, redirect to index with success message
-        echo "<script>alert('Registration successful! Please log in.'); window.location='index.php';</script>";
+        echo "<script>
+                alert('Registration successful! Please log in.');
+                window.location='index.php';
+              </script>";
         exit();
     } else {
-        echo "<script>alert('Registration failed. Please try again.'); window.location='index.php';</script>";
+        echo "<script>
+                alert('Registration failed. Please try again.');
+                window.location='index.php';
+              </script>";
     }
 }
+
+// ✅ Close connection
+$conn->close();
 ?>

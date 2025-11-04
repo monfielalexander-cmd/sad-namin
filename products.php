@@ -220,6 +220,7 @@ if ($transactions_result) {
 <div class="header">
   <h3>WELCOME TO ABETH HARDWARE!</h3>
   <div class="top-right">
+    <button class="home-btn" onclick="window.location.href='index.php'">Home</button>
     <button class="history-btn" onclick="toggleHistory()">History</button>
     <form action="logout.php" method="POST">
       <button type="submit" class="logout-btn">Logout</button>

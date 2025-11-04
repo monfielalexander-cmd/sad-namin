@@ -25,96 +25,81 @@
     margin: 5px 0;
   }
 
-  /* ===============================
-    BURGER NAVIGATION
-  =============================== */
-  .navbar {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-  }
+ /* ===============================
+   RESTORED ORIGINAL NAV DESIGN
+=============================== */
+nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #004080;
+  color: white;
+  padding: 15px 30px;
+  flex-wrap: wrap;
+}
 
-  /* BURGER ICON (3 LINES) */
-  .burger {
-    display: none;
+nav .logo {
+  font-size: 1.4rem;
+  font-weight: bold;
+}
+
+nav .menu {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+nav .menu a {
+  color: white;
+  margin: 0 8px;
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.3s;
+}
+
+nav .menu a:hover {
+  color: #ffcc00;
+}
+
+/* Username and Logout styling */
+nav .menu span {
+  color: #ffcc00;
+  font-weight: bold;
+  margin-right: 10px;
+}
+
+nav .menu a.logout-btn {
+  background-color: #ffcc00;
+  color: #004080;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-weight: bold;
+  transition: 0.3s;
+}
+
+nav .menu a.logout-btn:hover {
+  background-color: red;
+  color: #00264d;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  nav {
     flex-direction: column;
-    justify-content: center;
-    cursor: pointer;
-    width: 28px;
-    height: 22px;
-    position: relative;
-    z-index: 1000;
+    align-items: flex-start;
   }
 
-  .burger div {
-    height: 3px;
+  nav .menu {
+    flex-direction: column;
+    align-items: flex-start;
     width: 100%;
-    background-color: white;
-    margin: 3px 0;
-    border-radius: 3px;
-    transition: all 0.3s ease;
   }
 
-  /* BURGER TOGGLE ANIMATION */
-  .burger.active div:nth-child(1) {
-    transform: rotate(45deg) translateY(8px);
+  nav .menu a.logout-btn {
+    align-self: flex-start;
   }
-
-  .burger.active div:nth-child(2) {
-    opacity: 0;
-  }
-
-  .burger.active div:nth-child(3) {
-    transform: rotate(-45deg) translateY(-8px);
-  }
-
-  /* NAVIGATION LINKS */
-  .nav-links {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-  }
-
-  .nav-links a {
-    color: white;
-    text-decoration: none;
-    font-weight: 500;
-    transition: color 0.3s;
-  }
-
-  .nav-links a:hover {
-    color: #ffcc00;
-  }
-
-  /* MOBILE MENU DROPDOWN */
-  @media (max-width: 768px) {
-    .burger {
-      display: flex;
-    }
-
-    .nav-links {
-      display: none;
-      flex-direction: column;
-      width: 100%;
-      background: #003366;
-      position: absolute;
-      top: 55px;
-      left: 0;
-      padding: 10px 0;
-      border-bottom-left-radius: 10px;
-      border-bottom-right-radius: 10px;
-    }
-
-    .nav-links.active {
-      display: flex;
-    }
-
-    .nav-links a {
-      padding: 10px 0;
-      width: 100%;
-      text-align: center;
-    }
-  }
+}
 
   /* ===============================
     MAIN PANEL

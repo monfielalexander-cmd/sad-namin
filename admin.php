@@ -80,18 +80,18 @@ $products = $conn->query("SELECT * FROM products");
 </head>
 <body>
 
+
 <!-- NAVIGATION BAR -->
-<nav class="admin-navbar">
-  <div class="nav-left">
-    <span class="burger" onclick="toggleMenu()">☰</span>
-    <h2>Admin Dashboard</h2>
+<nav>
+  <div class="logo">Admin Dashboard</div>
+
+  <div class="menu">
+    <a href="customer_orders.php">Sales</a>
+    <a href="orders.php">Orders</a>
+    <a href="logout.php" class="logout-btn">Logout</a>
   </div>
-  <ul class="nav-menu" id="navMenu">
-    <li><a href="customer_orders.php">Sales</a></li>
-    <li><a href="orders.php">Orders</a></li>
-    <li><a href="logout.php" class="logout">Logout</a></li>
-  </ul>
 </nav>
+
 
 <script>
 function toggleMenu() {
