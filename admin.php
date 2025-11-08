@@ -221,7 +221,7 @@ function closeAddProductModal() {
 </div>
 
 <div>
-  <button>Archived</button>
+  <button>Archive</button>
 </div>
 <!-- 🔍 LIVE SEARCH -->
 <script>

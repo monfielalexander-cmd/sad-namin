@@ -88,9 +88,9 @@ nav .logo {
       background-repeat: no-repeat;
       background-position: calc(100% - 12px) center;
       padding-right: 35px;
-      border-radius: 6px; /* added rounded corners */
-      padding-left: 10px; /* small left padding for content */
-    }
+      border-radius: 6px;
+      padding-left: 10px; 
+    } 
     
     form[method="GET"] select:focus {
       border-color: #004080;
