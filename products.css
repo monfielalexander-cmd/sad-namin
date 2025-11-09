@@ -64,17 +64,25 @@
       min-width: 60%;
     }
 
-    .right-panel {
-      position: sticky;
-      top: 20px;
-      align-self: flex-start;
-      width: 340px;
-      background: #fff;
-       box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-      padding: 20px;
-      border-radius: 10px;
-      overflow-y: auto;
-      max-height: calc(100vh - 40px);
+ /* ========== BASE STYLES ========== */
+.layout {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 30px;
+}
+
+.right-panel {
+  position: sticky;
+  top: 20px;
+  align-self: flex-start;
+  width: 340px;
+  background: #fff;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+  border-radius: 10px;
+  overflow-y: auto;
+  max-height: calc(100vh - 40px);
 }
 
 
@@ -538,117 +546,54 @@
     }
 
 
-    /* ===============================
-      RESPONSIVE DESIGN
-    =============================== */
-    @media (max-width: 992px) {
-      .layout {
-        flex-direction: column;
-        align-items: stretch;
-        padding: 15px;
-        gap: 20px;
-      }
+@media (max-width: 992px) {
+  .layout {
+    flex-direction: column; /* 🟢 stack vertically */
+    align-items: stretch;
+    gap: 25px;
+    padding: 15px;
+  }
 
-      .product-grid {
-        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-        gap: 15px;
-      }
+  .right-panel {
+    position: relative; /* remove sticky */
+    top: 0;
+    width: 100%;
+    max-height: none;
+    border-radius: 8px;
+    box-shadow: 0 0 6px rgba(0, 0, 0, 0.1);
+    padding: 18px;
+  }
 
-      .right-panel {
-        position: relative;
-        top: 0;
-        width: auto;
-        margin: 0;
-        border-radius: 8px;
-      }
+  .product-grid {
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 20px;
+  }
+}
 
-      .header {
-        font-size: 1rem;
-        padding: 12px 20px;
-      }
-    }
+/* ========== SMALLER SCREENS ========== */
+@media (max-width: 600px) {
+  .layout {
+    padding: 10px;
+    gap: 20px;
+  }
 
-    @media (max-width: 600px) {
-      .top-right {
-        position: static;
-        justify-content: center;
-        margin-top: 10px;
-      }
+  .right-panel {
+    width: 100%;
+    border-radius: 8px;
+    padding: 15px;
+  }
 
-      form[method="GET"] {
-        flex-direction: row;
-        align-items: center;
-        padding: 0;
-        width: 100%;
-        margin: 0 0 15px 0;
-      }
+  .product-grid {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 12px;
+  }
 
-      form[method="GET"] label {
-        margin-bottom: 0;
-      }
+  .product-card {
+    width: 100%;
+  }
 
-      form[method="GET"] select {
-        flex: 1;
-        min-width: 0;
-        width: auto;
-      }
-
-      .product-grid {
-        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-        gap: 10px;
-        margin-top: 10px;
-      }
-
-      .product-card {
-        width: 100%;
-      }
-
-      .layout {
-        padding: 10px;
-      }
-
-      .cart-row {
-        flex-direction: column;
-        text-align: center;
-        padding: 12px;
-      }
-
-      .cart-controls {
-        width: 100%;
-        justify-content: center;
-        gap: 10px;
-      }
-
-      .total-section {
-        padding: 15px;
-      }
-
-      .total-section div {
-        flex-direction: column;
-        gap: 8px;
-      }
-
-      .total-section input {
-        width: 100%;
-      }
-
-      #orderType,
-      #deliveryFields input {
-        width: 100%;
-        margin: 8px 0;
-      }
-
-      .cart-content {
-        max-height: none;
-        overflow-y: visible;
-      }
-
-      .right-panel {
-        position: relative;
-        top: 0;
-        margin: 10px 0;
-        padding: 12px;
-        width: auto;
-      }
-    }
-
+  .cart-content {
+    max-height: none;
+    overflow-y: visible;
+  }
+}

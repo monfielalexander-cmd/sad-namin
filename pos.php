@@ -35,6 +35,7 @@ $categories = $conn->query("SELECT DISTINCT category FROM products_ko WHERE cate
   <div class="logo">Abeth Hardware POS</div>
   <div class="nav-buttons">
     <a href="admin.php"><button class="back-btn">⬅ Back to Dashboard</button></a>
+    <button id="toggleCartBtn" class="floating-cart-btn">🛒</button>
   </div>
 </nav>
 
@@ -171,6 +172,18 @@ function checkout() {
   cart = {};
   updateCartDisplay();
 }
+
+const cartContainer = document.querySelector('.cart-container');
+const toggleCartBtn = document.getElementById('toggleCartBtn');
+
+toggleCartBtn.addEventListener('click', () => {
+  const isActive = cartContainer.classList.toggle('active');
+  toggleCartBtn.textContent = isActive ? '->' : '🛒';
+});
+
+
+
+
 </script>
 
 </body>

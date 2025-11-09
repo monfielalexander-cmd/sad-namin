@@ -338,13 +338,6 @@ if ($transactions_result) {
           <button type="submit" class="add-cart-btn" name="checkout" style="width: 100%;">Checkout</button>
         </form>
 
-        <script>
-        document.getElementById('orderType').addEventListener('change', function() {
-          const deliveryFields = document.getElementById('deliveryFields');
-          deliveryFields.style.display = this.value === 'delivery' ? 'block' : 'none';
-        });
-        </script>
-
       <?php else: ?>
         <p>Your cart is empty.</p>  
       <?php endif; ?>
@@ -389,6 +382,10 @@ if (cashInput) {
     changeDisplay.textContent = change >= 0 ? change.toFixed(2) : "0.00";
   });
 }
+        document.getElementById('orderType').addEventListener('change', function() {
+          const deliveryFields = document.getElementById('deliveryFields');
+          deliveryFields.style.display = this.value === 'delivery' ? 'block' : 'none';
+        });
 </script>
 
 </body>
