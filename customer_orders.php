@@ -242,7 +242,7 @@ while ($row = mysqli_fetch_assoc($monthly_sales_result)) {
   <div class="container">
     <div class="top-buttons">
       <a href="admin.php" class="back-btn">← Back to Dashboard</a>
-      <a href="onsite_transactions.php"><button class="onsite-btn">🏪 Onsite</button></a>
+      <a href="onsite_transaction.php"><button class="onsite-btn">🏪 Onsite</button></a>
       <button class="download-btn" id="downloadPDF">⬇ Download Report</button>
     </div>
 

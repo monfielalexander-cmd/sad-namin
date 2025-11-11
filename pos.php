@@ -101,7 +101,7 @@ $categories = $conn->query("SELECT DISTINCT category FROM products_ko WHERE cate
   </table>
 
   <div class="total" id="cartTotal">Total: ₱0.00</div>
-  <button class="checkout-btn" onclick="checkout()">Checkout</button>
+<button type="button" class="checkout-btn" onclick="checkout()">Checkout</button>
 </div>
 
 <script>
@@ -123,9 +123,9 @@ function updateCartDisplay() {
       </td>
       <td>
         <div class="qty-controls">
-          <button onclick="changeQty(${id}, -1)">-</button>
-          <span>${item.qty}</span>
-          <button onclick="changeQty(${id}, 1)">+</button>
+<button onclick="changeQty('${id}', -1)">-</button>
+<span>${item.qty}</span>
+<button onclick="changeQty('${id}', 1)">+</button>
         </div>
       </td>
       <td>₱${(item.price * item.qty).toFixed(2)}</td>
@@ -143,7 +143,6 @@ function changeQty(id, delta) {
   updateCartDisplay();
 }
 
-// ✅ Fix: select only Add buttons and use dataset properly
 document.querySelectorAll('.add-cart-btn').forEach(btn => {
   btn.addEventListener('click', e => {
     const card = e.target.closest('.product-card');
@@ -172,28 +171,30 @@ function checkout() {
   let total = 0;
 
   for (const id in cart) {
-    items.push({ id: id, qty: cart[id].qty, price: cart[id].price });
     total += cart[id].price * cart[id].qty;
+    items.push({
+      id: id,
+      name: cart[id].name,
+      qty: cart[id].qty,
+      price: cart[id].price
+    });
   }
 
-  fetch('save_pos_transaction.php', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ total, items })
-  })
-  .then(res => res.json())
-  .then(data => {
-    if (data.status === 'success') {
-      alert('✅ Transaction saved successfully!');
-      cart = {};
-      updateCartDisplay();
-    } else {
-      alert('❌ Failed to save transaction.');
-    }
+  // Package data for POST
+  const transaction = JSON.stringify({
+    total: total,
+    items: items
   });
-}
 
+  document.getElementById('transactionData').value = transaction;
+  document.getElementById('checkoutForm').submit();
+}
 </script>
+
+
+<form id="checkoutForm" action="onsite_transaction.php" method="POST" style="display:none;">
+  <input type="hidden" name="transaction_data" id="transactionData">
+</form>
 
 </body>
 </html>
