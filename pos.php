@@ -32,6 +32,7 @@ $categories = $conn->query("SELECT DISTINCT category FROM products_ko WHERE cate
 <nav>
   <div class="logo">Abeth Hardware POS</div>
   <div class="nav-buttons">
+    <a href="onsite_transaction.php"><button class="onsite-btn">🏪 Onsite</button></a>
     <a href="admin.php"><button class="back-btn">⬅ Back to Dashboard</button></a>
     <button id="toggleCartBtn" class="floating-cart-btn">🛒</button>
   </div>

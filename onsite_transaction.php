@@ -86,7 +86,7 @@ while ($row = mysqli_fetch_assoc($monthly_sales_result)) {
 
     <!-- LEFT SIDE: TRANSACTION TABLE -->
     <div style="flex:2;">
-        <a href="customer_orders.php" class="back-btn">⬅ Back to All Transactions</a>
+        <a href="pos.php" class="back-btn">⬅ Back</a>
         <h2>Onsite POS Transactions</h2>
 
         <?php if (isset($_GET['inserted'])): ?>

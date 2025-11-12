@@ -31,6 +31,19 @@ nav .logo {
   text-decoration: none;
 }
 
+    .onsite-btn {
+    background-color: #004080;
+    color: white;
+    padding: 10px 14px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: bold;
+    }
+    .onsite-btn:hover {
+    background-color: #0066cc;
+    }
+
 /* Back Button Style */
 .back-btn {
   background-color: #004080;

@@ -101,20 +101,6 @@ while ($row = mysqli_fetch_assoc($monthly_sales_result)) {
       background-color: #0059b3;
     }
 
-    .onsite-btn {
-    background-color: #ff9800;
-    color: white;
-    padding: 10px 14px;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    font-weight: bold;
-    }
-    .onsite-btn:hover {
-    background-color: #e68900;
-    }
-
-
     table {
       width: 100%;
       border-collapse: collapse;
@@ -242,7 +228,6 @@ while ($row = mysqli_fetch_assoc($monthly_sales_result)) {
   <div class="container">
     <div class="top-buttons">
       <a href="admin.php" class="back-btn">← Back to Dashboard</a>
-      <a href="onsite_transaction.php"><button class="onsite-btn">🏪 Onsite</button></a>
       <button class="download-btn" id="downloadPDF">⬇ Download Report</button>
     </div>
 
