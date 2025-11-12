@@ -61,6 +61,8 @@ if (isset($_POST['update_stock'])) {
 /* ---------------- FETCH PRODUCTS ---------------- */
 $products = $conn->query("SELECT * FROM products_ko WHERE archive = 0 ORDER BY id DESC");
 
+/* ---------------- LOW STOCK ALERT ---------------- */
+$low_stock = $conn->query("SELECT name, stock FROM products_ko WHERE stock <= 2 AND archive = 0");
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -69,21 +71,19 @@ $products = $conn->query("SELECT * FROM products_ko WHERE archive = 0 ORDER BY i
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Admin Dashboard - Abeth Hardware</title>
 <link rel="stylesheet" href="admin.css?v=<?= time() ?>">
+
 </head>
 <body>
-
 
 <!-- NAVIGATION BAR -->
 <nav>
   <div class="logo">Admin Dashboard</div>
-
   <div class="menu">
     <a href="customer_orders.php">Sales</a>
     <a href="orders.php">Orders</a>
     <a href="logout.php" class="logout-btn">Logout</a>
   </div>
 </nav>
-
 
 <script>
 function toggleMenu() {
@@ -103,13 +103,40 @@ function closeAddProductModal() {
 <!-- PRODUCT MANAGEMENT -->
 <div class="admin-panel" id="products">
 
+  <h3 style="margin-top:0; display:flex; align-items:center; gap:8px;">
+    Manage Products
 
-  <h3 style="margin-top:0;">Manage Products</h3>
+    <!-- 🔔 Notification Bell -->
+    <div class="notification-wrapper">
+      <span class="bell-icon" onclick="toggleNotifications()">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="#1e90ff" viewBox="0 0 24 24" width="24px" height="24px">
+          <path d="M12 24c1.3 0 2.4-1 2.5-2.3h-5c.1 1.3 1.2 2.3 2.5 2.3zm6.3-6V11c0-3.1-1.6-5.6-4.3-6.3V4.5C14 3.1 13 2 11.5 2S9 3.1 9 4.5v.2C6.3 5.4 4.7 8 4.7 11v7L3 20v1h18v-1l-2.7-2z"/>
+        </svg>
+      </span>
+      <?php if ($low_stock && $low_stock->num_rows > 0): ?>
+        <span class="notif-badge"><?= $low_stock->num_rows ?></span>
+      <?php endif; ?>
+
+      <div id="notifDropdown" class="notif-dropdown">
+        <h4>Low Stock Alerts</h4>
+        <?php if ($low_stock && $low_stock->num_rows > 0): ?>
+          <ul>
+            <?php while ($item = $low_stock->fetch_assoc()): ?>
+              <li><strong><?= htmlspecialchars($item['name']) ?></strong> — only <span><?= $item['stock'] ?></span> left!</li>
+            <?php endwhile; ?>
+          </ul>
+        <?php else: ?>
+          <ul><li>All products are well stocked.</li></ul>
+        <?php endif; ?>
+      </div>
+    </div>
+  </h3>
 
   <div class="manage-products-header">
     <input type="text" id="searchInput" placeholder="Search by name, category, price..." class="search-bar">
     <button onclick="openAddProductModal()" class="add-product-btn">+ Add Product</button>
   </div>
+
   <table class="product-table" id="productTable">
     <tr>
       <th>ID</th>
@@ -173,7 +200,7 @@ function closeAddProductModal() {
       
       <div class="form-group">
         <label for="modal-category">Category</label>
-        <select id="modal-category" name="category">>
+        <select id="modal-category" name="category">
           <option value="">Select Category</option>
           <option value="Longspan">Longspan</option>
           <option value="Yero">Yero</option>
@@ -222,7 +249,6 @@ function closeAddProductModal() {
 
 <!-- 🔍 LIVE SEARCH -->
 <script>
-
 // Improved search: matches any cell (name, category, price, etc.)
 document.getElementById("searchInput").addEventListener("keyup", function() {
   const filter = this.value.trim().toLowerCase();
@@ -243,6 +269,20 @@ window.onclick = function(event) {
     closeAddProductModal();
   }
 }
+
+// 🔔 Notification dropdown smooth toggle
+function toggleNotifications() {
+  const dropdown = document.getElementById("notifDropdown");
+  dropdown.classList.toggle("show");
+}
+
+// Close notification when clicking outside
+window.addEventListener("click", function(e) {
+  const dropdown = document.getElementById("notifDropdown");
+  if (!e.target.closest(".notification-wrapper")) {
+    dropdown.classList.remove("show");
+  }
+});
 </script>
 
 <!-- Floating POS Button -->
@@ -252,4 +292,3 @@ window.onclick = function(event) {
 
 </body>
 </html>
-    
