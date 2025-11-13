@@ -111,103 +111,111 @@ header button:hover {
   color: #004080;
 }
 
-.categories {
-  display: flex;
-  justify-content: center;
-  gap: 25px;
-  padding: 20px;
-  flex-wrap: wrap;
-}
-
-.cat-card {
-  background: #f9f9f9;
-  padding: 15px;
-  border-radius: 12px;
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
-  text-align: center;
-  width: 220px;
-  transition: all 0.4s ease;
-  cursor: pointer;
-  position: relative;
-  overflow: hidden;
-}
-
-.cat-card img {
+/* ==============================
+   CATEGORY CAROUSEL FIX (under header)
+============================== */
+.carousel-container {
   width: 100%;
-  height: 150px;
-  object-fit: cover;
-  border-radius: 10px;
-  margin-bottom: 12px;
-  transition: transform 0.4s ease;
-  z-index: 1;
-}
-
-.cat-card h3 {
-  color: #004080;
-  font-size: 1.1rem;
-  margin-bottom: 8px;
-}
-
-.cat-card .info {
-  font-size: 0.9rem;
-  color: #666;
-  margin-bottom: 15px;
-}
-
-.cat-card .hover-content {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(2px);
-  padding: 20px;
+  padding: 60px 0 60px; /* space under header */
   display: flex;
   flex-direction: column;
+  align-items: center;
+  overflow: hidden;
+  background: #f9f9f9; /* matches your site’s tone */
+}
+
+.carousel {
+  position: relative;
+  width: 90%;
+  max-width: 1300px;
+  height: 320px; /* bigger carousel height for larger cards */
+  display: flex;
   justify-content: center;
   align-items: center;
-  opacity: 0;
-  transform: scale(0.8);
-  transition: all 0.4s ease;
+  perspective: 1200px;
+  margin-top: 40px; /* spacing from Category header */
 }
 
-.cat-card .hover-content p {
-  color: #333;
-  margin-bottom: 15px;
-  line-height: 1.5;
-  text-shadow: 0 1px 1px rgba(255, 255, 255, 0.8);
+/* Each card */
+.carousel-item {
+  position: absolute;
+  width: 220px; /* slightly bigger card */
+  height: 280px;
+  border-radius: 18px;
+  overflow: hidden;
+  transition: transform 0.8s ease, opacity 0.8s ease;
+  opacity: 0.6;
+  transform: scale(0.85);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  background: #fff; /* solid white background */
 }
 
-.cat-card .hover-content .buy-now {
-  background: #004080;
+/* Active (center) card */
+.carousel-item.active {
+  transform: translateZ(180px) scale(1);
+  opacity: 1;
+  z-index: 5;
+}
+
+/* Left and right card positioning */
+.carousel-item.prev {
+  transform: translateX(-280px) rotateY(25deg);
+  opacity: 0.9;
+  z-index: 3;
+}
+
+.carousel-item.next {
+  transform: translateX(280px) rotateY(-25deg);
+  opacity: 0.9;
+  z-index: 3;
+}
+
+/* Card image */
+.carousel-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Card overlay text */
+.carousel-item .info {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  background: rgba(0, 0, 0, 0.6);
+  padding: 8px 12px;
+  border-radius: 8px;
+  color: #fff;
+  font-size: 0.9rem;
+  text-align: left;
+}
+
+/* Carousel Buttons */
+.carousel-nav {
+  display: flex;
+  justify-content: center;
+  margin-top: 25px; /* increased from 10px to 25px */
+  gap: 20px;
+}
+
+.carousel-nav button {
+  background-color: #b8741a;
   color: white;
-  padding: 10px 20px;
   border: none;
-  border-radius: 5px;
-  font-weight: 500;
+  border-radius: 50%;
+  width: 45px;
+  height: 45px;
+  font-size: 18px;
   cursor: pointer;
-  transition: background 0.3s;
+  transition: 0.3s ease;
 }
 
-.cat-card .hover-content .buy-now:hover {
-  background: #0059b3;
-}
-
-.cat-card:hover {
-  transform: scale(1.15);
-  box-shadow: 0 15px 30px rgba(0, 64, 128, 0.3);
-  z-index: 10;
-}
-
-.cat-card:hover img {
+.carousel-nav button:hover {
+  background-color: #a36410;
   transform: scale(1.1);
 }
 
-.cat-card:hover .hover-content {
-  opacity: 1;
-  transform: scale(1);
-}
+
 
 /* ==============================
    ABOUT SECTION (DIV)

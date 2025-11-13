@@ -4,7 +4,7 @@ session_start();
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 
-require 'vendor/autoload.php'; // ✅ Include PHPMailer
+require 'vendor/autoload.php'; 
 
 // Redirect if not logged in
 if (!isset($_SESSION['username']) || $_SESSION['role'] != 'customer') {

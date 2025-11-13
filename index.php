@@ -40,55 +40,40 @@
       <?php endif; ?>
     </header>
 
-<!-- Categories Section -->
-<section id="categories">
-  <h2 class="section-title">Categories</h2>
-  <div class="categories">
-    <div class="cat-card">
-      <img src="istockphoto-92775187-2048x2048.jpg" alt="Gravel">
-      <h3>Gravel</h3>
-      <p class="info">Used for construction and road building</p>
-      <div class="hover-content">
-        <h3>Gravel</h3>
-        <p>High-quality construction gravel available in various sizes. Perfect for driveways, landscaping, and construction projects. Our gravel is carefully screened and washed.</p>
-        <button class="buy-now" onclick="checkLoginAndRedirect('products.php')">Buy Now</button>
-      </div>
-    </div>
+<h2 class="section-title">Category</h2>
 
-    <div class="cat-card">
-      <img src="pexels-david-iloba-28486424-17268238.jpg" alt="Sand">
-      <h3>Sand</h3>
-      <p class="info">Fine aggregate for construction</p>
-      <div class="hover-content">
-        <h3>Sand</h3>
-        <p>Premium construction sand suitable for concrete mixing, plastering, and masonry work. Clean, well-graded, and meets industry standards.</p>
-        <button class="buy-now" onclick="checkLoginAndRedirect('products.php')">Buy Now</button>
-      </div>
-    </div>
-
-    <div class="cat-card">
-      <img src="download.jpg" alt="Hollow Blocks">
-      <h3>Hollow Blocks</h3>
-      <p class="info">Durable building blocks</p>
-      <div class="hover-content">
+<div class="carousel-container">
+  <div class="carousel">
+    <div class="carousel-item prev">
+      <img src="images/block.jpg" alt="Hollow Blocks">
+      <div class="info">
         <h3>Hollow Blocks</h3>
-        <p>Strong and reliable hollow blocks perfect for walls and foundations. Available in different sizes and load-bearing capacities.</p>
-        <button class="buy-now" onclick="checkLoginAndRedirect('products.php')">Buy Now</button>
+        <p>₱20 / piece</p>
       </div>
     </div>
 
-    <div class="cat-card">
-      <img src="shopping.webp" alt="Cement">
-      <h3>Cement</h3>
-      <p class="info">Quality binding material</p>
-      <div class="hover-content">
+    <div class="carousel-item active">
+      <img src="images/cement.jpg" alt="Cement">
+      <div class="info">
         <h3>Cement</h3>
-        <p>High-strength Portland cement suitable for all construction needs. Quick-setting and provides excellent durability for your projects.</p>
-        <button class="buy-now" onclick="checkLoginAndRedirect('products.php')">Buy Now</button>
+        <p>₱300 / bag</p>
+      </div>
+    </div>
+
+    <div class="carousel-item next">
+      <img src="images/gravel.jpg" alt="Gravel">
+      <div class="info">
+        <h3>Gravel</h3>
+        <p>₱58 / bag</p>
       </div>
     </div>
   </div>
-</section>
+
+  <div class="carousel-nav">
+    <button id="prev">‹</button>
+    <button id="next">›</button>
+  </div>
+</div>
 
 
 
@@ -272,7 +257,35 @@
           });
         }
       });
-    </script>
+
+  const items = document.querySelectorAll('.carousel-item');
+  let current = 0;
+
+  function updateCarousel() {
+    items.forEach((item, index) => {
+      item.classList.remove('prev', 'next', 'active');
+      if (index === current) {
+        item.classList.add('active');
+      } else if (index === (current - 1 + items.length) % items.length) {
+        item.classList.add('prev');
+      } else if (index === (current + 1) % items.length) {
+        item.classList.add('next');
+      }
+    });
+  }
+
+  document.getElementById('next').addEventListener('click', () => {
+    current = (current + 1) % items.length;
+    updateCarousel();
+  });
+
+  document.getElementById('prev').addEventListener('click', () => {
+    current = (current - 1 + items.length) % items.length;
+    updateCarousel();
+  });
+
+  updateCarousel();
+</script>
 
   </body>
   </html>

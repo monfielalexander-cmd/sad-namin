@@ -86,7 +86,12 @@ body {
   position: relative;
 }
 
-/* ✅ FIX ADDED HERE – prevents cart & history headers from hiding under navbar */
+/* ✅ FIX ADDED HERE – moved product section closer to top */
+.products {
+  margin-top: 20px !important;
+}
+
+/* ✅ Also ensures cart/history panels stay below navbar */
 .layout,
 .right-panel,
 .history-container,

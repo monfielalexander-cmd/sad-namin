@@ -27,6 +27,7 @@ $monthly_sales_query = "
     DATE_FORMAT(transaction_date, '%Y-%m') AS month,
     SUM(total_amount) AS total_sales
   FROM transactions
+  WHERE source = 'online'
   GROUP BY month
   ORDER BY month ASC
 ";
@@ -323,13 +324,6 @@ while ($row = mysqli_fetch_assoc($monthly_sales_result)) {
       const imgWidth = 190;
       const imgHeight1 = page1.height * imgWidth / page1.width;
       pdf.addImage(img1, 'PNG', 10, 10, imgWidth, imgHeight1);
-
-      // Page 2 - Sales Summary
-      pdf.addPage();
-      const page2 = await html2canvas(document.getElementById('salesPage'), { scale: 2 });
-      const img2 = page2.toDataURL('image/png');
-      const imgHeight2 = page2.height * imgWidth / page2.width;
-      pdf.addImage(img2, 'PNG', 10, 10, imgWidth, imgHeight2);
 
       pdf.save('Transaction_Report.pdf');
     });
