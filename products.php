@@ -71,7 +71,7 @@ if (isset($_POST['checkout'])) {
     $cart_items = $conn->query("
         SELECT c.product_id, c.quantity, p.price, p.stock, p.name
         FROM cart c
-        JOIN products p ON c.product_id = p.id
+        JOIN products_ko p ON c.product_id = p.id
         WHERE c.customer_id='$customer_id'
     ");
 
@@ -89,7 +89,7 @@ if (isset($_POST['checkout'])) {
         $cart_items = $conn->query("
             SELECT c.product_id, c.quantity, p.price, p.name
             FROM cart c
-            JOIN products p ON c.product_id = p.id
+            JOIN products_ko p ON c.product_id = p.id
             WHERE c.customer_id='$customer_id'
         ");
 
@@ -97,7 +97,7 @@ if (isset($_POST['checkout'])) {
             $pid = $i['product_id'];
             $conn->query("INSERT INTO transaction_items (transaction_id, product_id, product_name, quantity, price)
                           VALUES ('$transaction_id', '$pid', '{$i['name']}', '{$i['quantity']}', '{$i['price']}')");
-            $conn->query("UPDATE products SET stock = stock - {$i['quantity']} WHERE id='$pid'");
+            $conn->query("UPDATE products_ko SET stock = stock - {$i['quantity']} WHERE id='$pid'");
         }
 
         $conn->query("DELETE FROM cart WHERE customer_id='$customer_id'");
@@ -183,7 +183,7 @@ if (!empty($selected_category)) {
 }
 $categories = $conn->query("SELECT DISTINCT category FROM products_ko WHERE category IS NOT NULL AND category != ''");
 
-$cart = $conn->query("SELECT c.cart_id, p.name, p.price, c.quantity FROM cart c JOIN products_ko p ON c.product_id = p.id WHERE c.customer_id='$customer_id'");
+$cart = $conn->query("SELECT c.cart_id, p.name, p.price, p.category, c.quantity FROM cart c JOIN products_ko p ON c.product_id = p.id WHERE c.customer_id='$customer_id'");
 $transactions_result = $conn->query("
     SELECT t.transaction_id, t.transaction_date, t.total_amount, ti.product_name, ti.quantity, ti.price
     FROM transactions t
@@ -294,55 +294,72 @@ if ($transactions_result) {
     <div class="cart-header">Your Cart</div>
     <div class="cart-content">
       <?php if ($cart && $cart->num_rows > 0): ?>
-        <?php 
-        $total = 0;
-        while ($item = $cart->fetch_assoc()): 
-            $subtotal = $item['price'] * $item['quantity'];
-            $total += $subtotal;
-        ?>
-          <div class="cart-row">
-            <div>
-              <strong><?= htmlspecialchars($item['name']) ?></strong><br>
-              ₱<?= number_format($item['price'], 2) ?>
+        <div class="cart-items-container">
+          <?php 
+          $total = 0;
+          while ($item = $cart->fetch_assoc()): 
+              $subtotal = $item['price'] * $item['quantity'];
+              $total += $subtotal;
+          ?>
+            <div class="cart-row">
+              <div class="cart-item-info">
+                <div class="cart-item-name"><?= htmlspecialchars($item['name']) ?></div>
+                <?php if (!empty($item['category'])): ?>
+                  <div class="cart-item-category"><?= htmlspecialchars($item['category']) ?></div>
+                <?php endif; ?>
+                <div class="cart-item-price">₱<?= number_format($item['price'], 2) ?></div>
+              </div>
+              <div class="cart-controls">
+                <form method="POST" style="display:inline;">
+                  <input type="hidden" name="cart_id" value="<?= $item['cart_id'] ?>">
+                  <button class="qty-btn" name="decrease_qty">-</button>
+                </form>
+                <span class="qty-display"><?= $item['quantity'] ?></span>
+                <form method="POST" style="display:inline;">
+                  <input type="hidden" name="cart_id" value="<?= $item['cart_id'] ?>">
+                  <button class="qty-btn" name="increase_qty">+</button>
+                </form>
+              </div>
             </div>
-            <div class="cart-controls">
-              <form method="POST" style="display:inline;">
-                <input type="hidden" name="cart_id" value="<?= $item['cart_id'] ?>">
-                <button class="qty-btn" name="decrease_qty">-</button>
-              </form>
-              <span><?= $item['quantity'] ?></span>
-              <form method="POST" style="display:inline;">
-                <input type="hidden" name="cart_id" value="<?= $item['cart_id'] ?>">
-                <button class="qty-btn" name="increase_qty">+</button>
-              </form>
-            </div>
-          </div>
-        <?php endwhile; ?>
-
-        <div class="total-section">
-          <p><strong>Subtotal:</strong> ₱<?= number_format($total, 2) ?></p>
-          <div style="display: flex; align-items: center; gap: 10px;">
-            <label><strong>Cash:</strong></label>
-            <input type="number" id="cashInput" placeholder="Enter cash amount" step="0.01" min="0">
-          </div>
-          <p><strong>Change:</strong> ₱<span id="changeDisplay">0.00</span></p>
+          <?php endwhile; ?>
         </div>
 
-        <form method="POST" id="checkoutForm">
-          <label><strong>Order Type:</strong></label>
-          <select name="order_type" id="orderType" required>
-            <option value="" disabled selected>-- Choose --</option>
-            <option value="pickup">Pickup</option>
-            <option value="delivery">Delivery</option>
-          </select>
-          <div id="deliveryFields" style="display: none;">
-            <input type="text" name="delivery_address" placeholder="Enter Delivery Address">
-            <input type="text" name="contact_number" placeholder="Enter Contact Number">
+        <div class="cart-footer">
+          <div class="total-section">
+            <p><strong>Subtotal:</strong> ₱<?= number_format($total, 2) ?></p>
+            <div class="cash-input-group">
+              <label><strong>Cash:</strong></label>
+              <input type="number" id="cashInput" placeholder="Enter cash amount" step="0.01" min="0">
+            </div>
+            <div class="change-display">
+              <strong>Change: ₱<span id="changeDisplay">0.00</span></strong>
+            </div>
           </div>
-          <button type="submit" class="add-cart-btn" name="checkout" style="width:100%;">Checkout</button>
-        </form>
+
+          <form method="POST" id="checkoutForm">
+            <div class="order-type-section">
+              <label><strong>Order Type:</strong></label>
+              <select name="order_type" id="orderType" required>
+                <option value="" disabled selected>-- Choose Order Type --</option>
+                <option value="pickup">🏪 Pickup</option>
+                <option value="delivery">🚚 Delivery</option>
+              </select>
+              <div id="deliveryFields" class="delivery-fields">
+                <input type="text" name="delivery_address" placeholder="📍 Enter Delivery Address" required>
+                <input type="text" name="contact_number" placeholder="📞 Enter Contact Number" required>
+              </div>
+            </div>
+            <button type="submit" class="checkout-btn" name="checkout">🛒 Checkout Now</button>
+          </form>
+        </div>
       <?php else: ?>
-        <p>Your cart is empty.</p>
+        <div class="cart-items-container">
+          <div class="empty-cart">
+            <div class="empty-cart-icon">🛒</div>
+            <div class="empty-cart-text">Your cart is empty</div>
+            <div class="empty-cart-subtext">Add some products to get started!</div>
+          </div>
+        </div>
       <?php endif; ?>
     </div>
   </div>
@@ -394,8 +411,15 @@ const deliveryFields = document.getElementById('deliveryFields');
 orderType?.addEventListener('change', () => {
   if (orderType.value === 'delivery') {
     deliveryFields.style.display = 'block';
+    deliveryFields.querySelectorAll('input').forEach(input => {
+      input.setAttribute('required', 'required');
+    });
   } else {
     deliveryFields.style.display = 'none';
+    deliveryFields.querySelectorAll('input').forEach(input => {
+      input.removeAttribute('required');
+      input.value = '';
+    });
   }
 });
 
