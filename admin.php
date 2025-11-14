@@ -154,19 +154,19 @@ function closeAddProductModal() {
     <?php if ($products && $products->num_rows > 0): ?>
       <?php while ($p = $products->fetch_assoc()): ?>
         <tr>
-          <td><?= $p['id'] ?></td>
-          <td><?= htmlspecialchars($p['name']) ?></td>
-          <td><?= htmlspecialchars($p['category'] ?? 'N/A') ?></td>
-          <td>₱<?= number_format($p['price'], 2) ?></td>
-          <td><?= $p['stock'] ?></td>
-          <td>
+          <td data-label="ID"><?= $p['id'] ?></td>
+          <td data-label="Name"><?= htmlspecialchars($p['name']) ?></td>
+          <td data-label="Category"><?= htmlspecialchars($p['category'] ?? 'N/A') ?></td>
+          <td data-label="Price">₱<?= number_format($p['price'], 2) ?></td>
+          <td data-label="Stock"><?= $p['stock'] ?></td>
+          <td data-label="Image">
             <?php if ($p['image']): ?>
               <img src="<?= htmlspecialchars($p['image']) ?>" width="60" alt="Product Image">
             <?php else: ?>
               No image
             <?php endif; ?>
           </td>
-          <td>
+          <td data-label="Actions">
             <div class="stock-actions">
               <form method="POST" style="display: inline;">
                 <input type="hidden" name="product_id" value="<?= $p['id'] ?>">

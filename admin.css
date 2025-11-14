@@ -1,12 +1,41 @@
   /* ==============================
-    ADMIN DASHBOARD STYLE
-  ============================== */
-  body {
-    font-family: 'Poppins', sans-serif;
-    background: #f8f9fa;
-    margin: 0;
-    padding: 0;
-  }
+   RESET & BASE STYLES
+============================== */
+:root {
+  --primary-blue: #004080;
+  --secondary-blue: #0066cc;
+  --accent-gold: #ffcc00;
+  --dark-gold: #e6b800;
+  --text-dark: #333;
+  --text-light: #555;
+  --bg-light: #f9f9f9;
+  --shadow-light: 0 4px 15px rgba(0, 64, 128, 0.1);
+  --shadow-medium: 0 8px 25px rgba(0, 64, 128, 0.15);
+  --shadow-heavy: 0 12px 35px rgba(0, 64, 128, 0.2);
+  --transition: all 0.3s ease;
+  --border-radius: 12px;
+  --success-green: #27ae60;
+  --danger-red: #e74c3c;
+  --warning-orange: #f39c12;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Poppins', sans-serif;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  line-height: 1.6;
+  color: var(--text-dark);
+  background: linear-gradient(135deg, #f8faff 0%, #e8f2ff 100%);
+  min-height: 100vh;
+}
 
   /* HEADER BAR */
   .admin-header {
@@ -25,90 +54,296 @@
     margin: 5px 0;
   }
 
- /* ===============================
-   RESTORED ORIGINAL NAV DESIGN
-=============================== */
+/* ==============================
+   ENHANCED NAVBAR
+============================== */
 nav {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: #004080;
+  background: linear-gradient(135deg, var(--primary-blue) 0%, #0056b3 100%);
   color: white;
-  padding: 15px 30px;
+  padding: 20px 40px;
+  box-shadow: var(--shadow-medium);
+  backdrop-filter: blur(10px);
+  position: sticky;
+  top: 0;
+  z-index: 1000;
   flex-wrap: wrap;
 }
 
+nav::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(45deg, transparent 0%, rgba(255, 204, 0, 0.1) 50%, transparent 100%);
+  pointer-events: none;
+}
+
 nav .logo {
-  font-size: 1.4rem;
-  font-weight: bold;
+  font-size: 1.6rem;
+  font-weight: 700;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+  background: linear-gradient(45deg, white, var(--accent-gold));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  position: relative;
+  z-index: 2;
 }
 
 nav .menu {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 15px;
   flex-wrap: wrap;
+  position: relative;
+  z-index: 2;
 }
 
 nav .menu a {
   color: white;
-  margin: 0 8px;
+  margin: 0 10px;
   text-decoration: none;
-  font-weight: 500;
-  transition: color 0.3s;
+  font-weight: 600;
+  transition: var(--transition);
+  position: relative;
+  padding: 8px 16px;
+  border-radius: 25px;
+}
+
+nav .menu a::before {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  width: 0;
+  height: 2px;
+  background: var(--accent-gold);
+  transition: var(--transition);
+  transform: translateX(-50%);
 }
 
 nav .menu a:hover {
-  color: #ffcc00;
+  color: var(--accent-gold);
+  text-shadow: 0 0 10px rgba(255, 204, 0, 0.5);
+  transform: translateY(-2px);
 }
 
-/* Username and Logout styling */
-nav .menu span {
-  color: #ffcc00;
-  font-weight: bold;
-  margin-right: 10px;
+nav .menu a:hover::before {
+  width: 100%;
 }
 
 nav .menu a.logout-btn {
-  background-color: #004080;
+  background: linear-gradient(45deg, var(--danger-red), #c0392b);
   color: white;
-  padding: 6px 12px;
-  border-radius: 6px;
-  font-weight: bold;
-  transition: 0.3s;
+  padding: 10px 20px;
+  border-radius: 25px;
+  font-weight: 700;
+  transition: var(--transition);
+  box-shadow: 0 4px 15px rgba(231, 76, 60, 0.3);
 }
 
 nav .menu a.logout-btn:hover {
-  background-color: red;
-  color: #00264d;
+  background: linear-gradient(45deg, #c0392b, #a93226);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(231, 76, 60, 0.4);
 }
 
-/* Responsive design */
+/* ==============================
+   ENHANCED RESPONSIVE DESIGN
+============================== */
+@media (max-width: 1200px) {
+  .admin-panel {
+    padding: 30px 20px;
+  }
+  
+  .admin-panel > h3 {
+    font-size: 1.8rem;
+  }
+  
+  .manage-products-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 15px;
+  }
+  
+  .search-bar {
+    min-width: auto;
+  }
+}
+
+@media (max-width: 992px) {
+  nav {
+    padding: 15px 25px;
+  }
+  
+  nav .logo {
+    font-size: 1.4rem;
+  }
+  
+  .product-table {
+    font-size: 0.9rem;
+  }
+  
+  .product-table th,
+  .product-table td {
+    padding: 10px 8px;
+  }
+  
+  .stock-actions {
+    flex-direction: column;
+    gap: 5px;
+    align-items: stretch;
+  }
+  
+  .stock-actions form {
+    justify-content: center;
+  }
+}
+
 @media (max-width: 768px) {
   nav {
     flex-direction: column;
-    align-items: flex-start;
+    gap: 15px;
+    padding: 20px;
+    text-align: center;
   }
 
   nav .menu {
-    flex-direction: column;
-    align-items: flex-start;
+    flex-wrap: wrap;
+    justify-content: center;
     width: 100%;
   }
 
   nav .menu a.logout-btn {
-    align-self: flex-start;
+    margin-top: 10px;
+  }
+  
+  .admin-panel {
+    padding: 20px 15px;
+  }
+  
+  .admin-panel > h3 {
+    font-size: 1.6rem;
+    flex-direction: column;
+    text-align: center;
+    gap: 10px;
   }
 }
 
-  /* ===============================
-    MAIN PANEL
-  =============================== */
-  .admin-panel {
-    padding: 20px;
-    min-height: 80vh;
-    position: relative;
+@media (max-width: 600px) {
+  .product-table,
+  .product-table thead,
+  .product-table tbody,
+  .product-table th,
+  .product-table td,
+  .product-table tr {
+    display: block;
   }
+  
+  .product-table thead tr {
+    position: absolute;
+    top: -9999px;
+    left: -9999px;
+  }
+  
+  .product-table tr {
+    background: linear-gradient(145deg, #ffffff 0%, #f8faff 100%);
+    border: 1px solid rgba(0, 64, 128, 0.1);
+    border-radius: var(--border-radius);
+    margin: 0 0 15px 0;
+    padding: 15px;
+    box-shadow: var(--shadow-light);
+  }
+  
+  .product-table td {
+    border: none;
+    position: relative;
+    padding: 8px 0 8px 30%;
+    text-align: right;
+  }
+  
+  .product-table td:before {
+    content: attr(data-label) ": ";
+    position: absolute;
+    left: 0;
+    width: 25%;
+    padding-right: 10px;
+    white-space: nowrap;
+    font-weight: 600;
+    color: var(--primary-blue);
+    text-align: left;
+  }
+  
+  .stock-actions {
+    flex-direction: column;
+    gap: 8px;
+    padding-top: 10px;
+  }
+  
+  .stock-actions form {
+    width: 100%;
+  }
+  
+  .stock-actions input[type="number"] {
+    width: 100%;
+    margin-bottom: 5px;
+  }
+  
+  .update-btn,
+  .archive-btn {
+    width: 100%;
+    padding: 10px;
+    font-size: 0.9rem;
+  }
+  
+  .manage-products-header {
+    padding: 15px;
+  }
+  
+  .add-product-btn {
+    width: 100%;
+    padding: 15px;
+  }
+}
+
+/* ==============================
+   MAIN ADMIN PANEL
+============================== */
+.admin-panel {
+  padding: 40px;
+  min-height: 80vh;
+  position: relative;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.admin-panel > h3 {
+  color: var(--primary-blue);
+  font-size: 2.2rem;
+  font-weight: 700;
+  margin: 0 0 30px 0;
+  text-shadow: 2px 2px 4px rgba(0, 64, 128, 0.1);
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.admin-panel > h3::after {
+  content: '';
+  position: absolute;
+  bottom: -8px;
+  left: 0;
+  width: 80px;
+  height: 4px;
+  background: linear-gradient(45deg, var(--accent-gold), #ffd700);
+  border-radius: 2px;
+}
 
   /* CLOSE BUTTON */
   .close-btn {
@@ -162,31 +397,71 @@ nav .menu a.logout-btn:hover {
     background: #003366;
   }
 
-  /* PRODUCT TABLE */
-  .admin-panel table {
-    width: 100%;
-    border-collapse: collapse;
-    background: white;
-    border-radius: 8px;
-    overflow: hidden;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-  }
+/* ==============================
+   ENHANCED PRODUCT TABLE
+============================== */
+.product-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: linear-gradient(145deg, #ffffff 0%, #f8faff 100%);
+  border-radius: var(--border-radius);
+  overflow: hidden;
+  box-shadow: var(--shadow-medium);
+  margin-top: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.8);
+}
 
-  .admin-panel th,
-  .admin-panel td {
-    padding: 10px;
-    border-bottom: 1px solid #ddd;
-    text-align: left;
-  }
+.product-table th,
+.product-table td {
+  padding: 15px 12px;
+  text-align: left;
+  border-bottom: 1px solid rgba(0, 64, 128, 0.1);
+}
 
-  .admin-panel th {
-    background: #004080;
-    color: white;
-  }
+.product-table th {
+  background: linear-gradient(135deg, var(--primary-blue) 0%, #0056b3 100%);
+  color: white;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-size: 0.9rem;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
 
-  .admin-panel tr:nth-child(even) {
-    background: #f2f6fa;
-  }
+.product-table tbody tr {
+  transition: var(--transition);
+}
+
+.product-table tbody tr:nth-child(even) {
+  background: rgba(248, 250, 255, 0.5);
+}
+
+.product-table tbody tr:hover {
+  background: linear-gradient(145deg, rgba(255, 204, 0, 0.1), rgba(0, 64, 128, 0.05));
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(0, 64, 128, 0.1);
+}
+
+.product-table td {
+  font-size: 0.95rem;
+  color: var(--text-dark);
+}
+
+.product-table img {
+  width: 60px;
+  height: 60px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 2px solid rgba(255, 255, 255, 0.8);
+  transition: var(--transition);
+}
+
+.product-table img:hover {
+  transform: scale(1.1);
+  box-shadow: 0 4px 15px rgba(0, 64, 128, 0.2);
+}
 
   .admin-panel img {
     width: 80px;
@@ -471,53 +746,85 @@ nav .menu a.logout-btn:hover {
     margin: 0;
   }
 
-  /* Input for Qty */
-  .stock-actions input[type="number"] {
-    width: 70px;
-    padding: 6px;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-  }
+/* ==============================
+   ENHANCED ACTION BUTTONS
+============================== */
+.stock-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+}
 
-  /* Add Stock Button (Red) */
-  .update-btn {
-    background-color: #004080;
-    color: #fff;
-    border: none;
-    padding: 6px 12px;
-    border-radius: 6px;
-    cursor: pointer;
-    transition: background 0.3s ease;
-  }
+.stock-actions form {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+}
 
-  .update-btn:hover {
-    background-color: #004080; 
-    transform: translateY(-2px);
-    box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-  }
+.stock-actions input[type="number"] {
+  width: 70px;
+  padding: 8px;
+  border: 2px solid rgba(0, 64, 128, 0.1);
+  border-radius: 8px;
+  font-size: 0.9rem;
+  background: rgba(248, 250, 255, 0.8);
+  transition: var(--transition);
+}
 
+.stock-actions input[type="number"]:focus {
+  outline: none;
+  border-color: var(--accent-gold);
+  box-shadow: 0 0 0 2px rgba(255, 204, 0, 0.2);
+}
 
- .archive-btn {
-    background-color: #e74c3c; /* Nice red */
-    color: white;
-    border: none;
-    padding: 6px 14px;
-    font-size: 14px;
-    border-radius: 6px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+.update-btn {
+  background: linear-gradient(45deg, var(--secondary-blue), #0080ff);
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+  transition: var(--transition);
+  box-shadow: 0 2px 8px rgba(0, 102, 204, 0.3);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.update-btn:hover {
+  background: linear-gradient(45deg, #0080ff, var(--secondary-blue));
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 102, 204, 0.4);
+}
+
+.archive-btn {
+  background: linear-gradient(45deg, var(--danger-red), #c0392b);
+  color: white;
+  border: none;
+  padding: 8px 14px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: var(--transition);
+  box-shadow: 0 2px 8px rgba(231, 76, 60, 0.3);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
 }
 
 .archive-btn:hover {
-    background-color: #761206; /* Darker red on hover */
-    transform: translateY(-2px);
-    box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+  background: linear-gradient(45deg, #c0392b, #a93226);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(231, 76, 60, 0.4);
 }
 
-.archive-btn:active {
-    transform: translateY(0);
-    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+.archive-btn:active,
+.update-btn:active {
+  transform: translateY(0);
 }
 
   /* Align Add Product button beside Search bar */
@@ -621,36 +928,83 @@ nav .menu a.logout-btn:hover {
   font-weight: bold;
 }
 
-  .search-bar {
-    width: 100%;
-    max-width: 400px;
-    margin: 15px 0;
-    padding: 8px 12px;
-    border: 1px solid #ccc;
-    border-radius: 6px;
-    font-size: 0.95rem;
-    display: block;
-  }
+/* ==============================
+   ENHANCED SEARCH & CONTROLS
+============================== */
+.manage-products-header {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+  margin-bottom: 25px;
+  padding: 20px;
+  background: linear-gradient(145deg, #ffffff 0%, #f8faff 100%);
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow-light);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+}
 
-  /* Add Product Button */
-  .add-product-btn {
-    background: #004080;
-    color: white;
-    border: none;
-    padding: 12px 24px;
-    border-radius: 8px;
-    cursor: pointer;
-    font-size: 1rem;
-    font-weight: 600;
-    transition: background 0.3s ease;
-    margin-bottom: 20px;
-  }
+.search-bar {
+  flex: 1;
+  min-width: 280px;
+  padding: 12px 20px;
+  border: 2px solid rgba(0, 64, 128, 0.1);
+  border-radius: 25px;
+  font-size: 1rem;
+  background: rgba(248, 250, 255, 0.8);
+  transition: var(--transition);
+  color: var(--text-dark);
+}
 
-  .add-product-btn:hover {
-    background: #003366;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-  }
+.search-bar:focus {
+  outline: none;
+  border-color: var(--accent-gold);
+  box-shadow: 0 0 0 3px rgba(255, 204, 0, 0.2);
+  background: white;
+  transform: translateY(-2px);
+}
+
+.search-bar::placeholder {
+  color: var(--text-light);
+}
+
+.add-product-btn {
+  background: linear-gradient(45deg, var(--success-green), #2ecc71);
+  color: white;
+  border: none;
+  padding: 12px 25px;
+  border-radius: 25px;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 600;
+  transition: var(--transition);
+  box-shadow: 0 4px 15px rgba(39, 174, 96, 0.3);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  position: relative;
+  overflow: hidden;
+}
+
+.add-product-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  transition: left 0.5s;
+}
+
+.add-product-btn:hover {
+  background: linear-gradient(45deg, #2ecc71, #27ae60);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(39, 174, 96, 0.4);
+}
+
+.add-product-btn:hover::before {
+  left: 100%;
+}
 
   /* Modal Styles */
   .modal {
@@ -871,24 +1225,46 @@ nav .menu a.logout-btn:hover {
     }
   }
 
-  /* Floating POS Button */
+/* ==============================
+   ENHANCED FLOATING POS BUTTON
+============================== */
 .pos-float-btn {
   position: fixed;
-  bottom: 25px;
-  left: 25px;
-  background-color: #007bff;
+  bottom: 30px;
+  left: 30px;
+  background: linear-gradient(45deg, var(--secondary-blue), #0080ff);
   color: white;
-  font-weight: bold;
-  font-size: 18px;
-  padding: 14px 22px;
+  font-weight: 700;
+  font-size: 16px;
+  padding: 15px 25px;
   border-radius: 50px;
   text-decoration: none;
-  box-shadow: 0 4px 8px rgba(0,0,0,0.3);
-  transition: background 0.3s, transform 0.2s;
+  box-shadow: var(--shadow-medium);
+  transition: var(--transition);
   z-index: 999;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
 }
 
 .pos-float-btn:hover {
-  background-color: #0056b3;
-  transform: scale(1.05);
+  background: linear-gradient(45deg, #0080ff, var(--secondary-blue));
+  transform: translateY(-5px) scale(1.05);
+  box-shadow: var(--shadow-heavy);
+  text-decoration: none;
+  color: white;
+}
+
+.pos-float-btn:active {
+  transform: translateY(-2px) scale(1.02);
+}
+
+@media (max-width: 600px) {
+  .pos-float-btn {
+    bottom: 20px;
+    left: 20px;
+    padding: 12px 20px;
+    font-size: 14px;
+  }
 }

@@ -38,21 +38,23 @@ $categories = $conn->query("SELECT DISTINCT category FROM products_ko WHERE cate
   </div>
 </nav>
 
-<!-- ✅ Category Filter -->
-<form method="GET" style="margin-bottom: 20px;">
-  <label for="category"><strong>Filter by Category:</strong></label>
-  <select name="category" id="category" onchange="this.form.submit()" style="padding: 8px; margin-left: 10px;">
-    <option value="">All</option>
-    <?php if ($categories && $categories->num_rows > 0): ?>
-      <?php while ($cat = $categories->fetch_assoc()): ?>
-        <option value="<?= htmlspecialchars($cat['category']) ?>" 
-          <?= ($selected_category === $cat['category']) ? 'selected' : '' ?>>
-          <?= htmlspecialchars($cat['category']) ?>
-        </option>
-      <?php endwhile; ?>
-    <?php endif; ?>
-  </select>
-</form>
+<!-- ✅ Enhanced Category Filter -->
+<div class="filter-container">
+  <form method="GET">
+    <label for="category">Filter by Category:</label>
+    <select name="category" id="category" onchange="this.form.submit()">
+      <option value="">All Categories</option>
+      <?php if ($categories && $categories->num_rows > 0): ?>
+        <?php while ($cat = $categories->fetch_assoc()): ?>
+          <option value="<?= htmlspecialchars($cat['category']) ?>" 
+            <?= ($selected_category === $cat['category']) ? 'selected' : '' ?>>
+            <?= htmlspecialchars($cat['category']) ?>
+          </option>
+        <?php endwhile; ?>
+      <?php endif; ?>
+    </select>
+  </form>
+</div>
 
 <div class="product-grid">
   <?php if ($products && $products->num_rows > 0): ?>
@@ -87,9 +89,12 @@ $categories = $conn->query("SELECT DISTINCT category FROM products_ko WHERE cate
   <?php endif; ?>
 </div>
 
-<!-- 🛒 Floating Cart -->
+<!-- 🛒 Enhanced Cart Sidebar -->
 <div class="cart-container">
-  <h3>🛒 Transaction</h3>
+  <div class="cart-header">
+    <h3>🛒 Transaction</h3>
+    <button class="close-cart-btn" onclick="toggleMobileCart()" id="closeCartBtn">✕</button>
+  </div>
   <table class="cart-table" id="cartTable">
     <thead>
       <tr>
@@ -102,7 +107,61 @@ $categories = $conn->query("SELECT DISTINCT category FROM products_ko WHERE cate
   </table>
 
   <div class="total" id="cartTotal">Total: ₱0.00</div>
-<button type="button" class="checkout-btn" onclick="checkout()">Checkout</button>
+  
+  <!-- Enhanced Checkout Section -->
+  <div class="checkout-section" id="checkoutSection" style="display: none;">
+    <div class="payment-mode">
+      <h4>Payment Mode</h4>
+      <div class="payment-options">
+        <label class="payment-option">
+          <input type="radio" name="paymentMode" value="cash" checked onchange="togglePaymentMethod()">
+          <span>💵 Cash</span>
+        </label>
+        <label class="payment-option">
+          <input type="radio" name="paymentMode" value="gcash" onchange="togglePaymentMethod()">
+          <span>📱 GCash</span>
+        </label>
+      </div>
+    </div>
+    
+    <div class="cash-payment" id="cashPayment">
+      <div class="input-group">
+        <label for="cashAmount">Cash Amount:</label>
+        <input type="number" id="cashAmount" placeholder="Enter amount" step="0.01" oninput="calculateChange()">
+      </div>
+      <div class="change-display" id="changeDisplay">
+        <strong>Change: ₱0.00</strong>
+      </div>
+    </div>
+    
+    <div class="gcash-payment" id="gcashPayment" style="display: none;">
+      <div class="input-group">
+        <label for="gcashRef">GCash Reference Number:</label>
+        <input type="text" id="gcashRef" placeholder="Enter reference number">
+      </div>
+    </div>
+    
+    <div class="sales-breakdown">
+      <h4>Sales Breakdown</h4>
+      <div class="breakdown-item">
+        <span>Subtotal:</span>
+        <span id="subtotalAmount">₱0.00</span>
+      </div>
+      <div class="breakdown-item">
+        <span>Tax (12%):</span>
+        <span id="taxAmount">₱0.00</span>
+      </div>
+      <div class="breakdown-item total-line">
+        <span><strong>Total:</strong></span>
+        <span id="finalTotal"><strong>₱0.00</strong></span>
+      </div>
+    </div>
+    
+    <button type="button" class="confirm-btn" onclick="confirmTransaction()">Confirm Transaction</button>
+    <button type="button" class="cancel-btn" onclick="cancelCheckout()">Cancel</button>
+  </div>
+  
+<button type="button" class="checkout-btn" onclick="initiateCheckout()">Checkout</button>
 </div>
 
 <script>
@@ -162,17 +221,86 @@ document.querySelectorAll('.add-cart-btn').forEach(btn => {
   });
 });
 
-function checkout() {
+let currentTotal = 0;
+
+function initiateCheckout() {
   if (Object.keys(cart).length === 0) {
     alert('No items in cart!');
     return;
   }
 
+  // Calculate totals
+  let subtotal = 0;
+  for (const id in cart) {
+    subtotal += cart[id].price * cart[id].qty;
+  }
+  
+  const tax = subtotal * 0.12; // 12% tax
+  currentTotal = subtotal + tax;
+  
+  // Update breakdown display
+  document.getElementById('subtotalAmount').textContent = `₱${subtotal.toFixed(2)}`;
+  document.getElementById('taxAmount').textContent = `₱${tax.toFixed(2)}`;
+  document.getElementById('finalTotal').textContent = `₱${currentTotal.toFixed(2)}`;
+  
+  // Show checkout section
+  document.getElementById('checkoutSection').style.display = 'block';
+  document.querySelector('.checkout-btn').style.display = 'none';
+}
+
+function togglePaymentMethod() {
+  const paymentMode = document.querySelector('input[name="paymentMode"]:checked').value;
+  const cashPayment = document.getElementById('cashPayment');
+  const gcashPayment = document.getElementById('gcashPayment');
+  
+  if (paymentMode === 'cash') {
+    cashPayment.style.display = 'block';
+    gcashPayment.style.display = 'none';
+  } else {
+    cashPayment.style.display = 'none';
+    gcashPayment.style.display = 'block';
+  }
+}
+
+function calculateChange() {
+  const cashAmount = parseFloat(document.getElementById('cashAmount').value) || 0;
+  const change = Math.max(0, cashAmount - currentTotal);
+  
+  const changeDisplay = document.getElementById('changeDisplay');
+  changeDisplay.innerHTML = `<strong>Change: ₱${change.toFixed(2)}</strong>`;
+  
+  if (cashAmount < currentTotal && cashAmount > 0) {
+    changeDisplay.style.background = 'linear-gradient(45deg, #e74c3c, #c0392b)';
+    changeDisplay.innerHTML = `<strong>Insufficient Amount: ₱${(currentTotal - cashAmount).toFixed(2)} more needed</strong>`;
+  } else {
+    changeDisplay.style.background = 'linear-gradient(45deg, var(--success-green), #2ecc71)';
+  }
+}
+
+function confirmTransaction() {
+  const paymentMode = document.querySelector('input[name="paymentMode"]:checked').value;
+  
+  // Validate payment
+  if (paymentMode === 'cash') {
+    const cashAmount = parseFloat(document.getElementById('cashAmount').value);
+    if (!cashAmount || cashAmount < currentTotal) {
+      alert('Please enter a valid cash amount that covers the total!');
+      return;
+    }
+  } else if (paymentMode === 'gcash') {
+    const gcashRef = document.getElementById('gcashRef').value.trim();
+    if (!gcashRef) {
+      alert('Please enter the GCash reference number!');
+      return;
+    }
+  }
+
+  // Prepare transaction data
   const items = [];
-  let total = 0;
+  let subtotal = 0;
 
   for (const id in cart) {
-    total += cart[id].price * cart[id].qty;
+    subtotal += cart[id].price * cart[id].qty;
     items.push({
       id: id,
       name: cart[id].name,
@@ -181,21 +309,75 @@ function checkout() {
     });
   }
 
-  // Package data for POST
-  const transaction = JSON.stringify({
-    total: total,
-    items: items
-  });
+  const transactionData = {
+    subtotal: subtotal,
+    tax: subtotal * 0.12,
+    total: currentTotal,
+    items: items,
+    payment_mode: paymentMode,
+    cash_amount: paymentMode === 'cash' ? parseFloat(document.getElementById('cashAmount').value) : null,
+    gcash_ref: paymentMode === 'gcash' ? document.getElementById('gcashRef').value : null,
+    change: paymentMode === 'cash' ? Math.max(0, parseFloat(document.getElementById('cashAmount').value) - currentTotal) : 0
+  };
 
-  document.getElementById('transactionData').value = transaction;
+  document.getElementById('transactionData').value = JSON.stringify(transactionData);
   document.getElementById('checkoutForm').submit();
+}
+
+function cancelCheckout() {
+  document.getElementById('checkoutSection').style.display = 'none';
+  document.querySelector('.checkout-btn').style.display = 'block';
+  
+  // Reset form
+  document.getElementById('cashAmount').value = '';
+  document.getElementById('gcashRef').value = '';
+  document.getElementById('changeDisplay').innerHTML = '<strong>Change: ₱0.00</strong>';
+  document.querySelector('input[value="cash"]').checked = true;
+  togglePaymentMethod();
 }
 </script>
 
 
+<!-- Mobile Floating Cart Button -->
+<button class="floating-cart-btn" onclick="toggleMobileCart()" id="floatingCartBtn">
+  🛒 <span id="cartCount">0</span>
+</button>
+
 <form id="checkoutForm" action="onsite_transaction.php" method="POST" style="display:none;">
   <input type="hidden" name="transaction_data" id="transactionData">
 </form>
+
+<script>
+// Mobile cart toggle functionality
+function toggleMobileCart() {
+  const cartContainer = document.querySelector('.cart-container');
+  cartContainer.classList.toggle('active');
+}
+
+// Update cart count for mobile button
+function updateCartCount() {
+  const itemCount = Object.keys(cart).reduce((sum, id) => sum + cart[id].qty, 0);
+  document.getElementById('cartCount').textContent = itemCount;
+  
+  // Show/hide floating button based on cart contents
+  const floatingBtn = document.getElementById('floatingCartBtn');
+  if (itemCount > 0) {
+    floatingBtn.style.display = 'flex';
+  } else {
+    floatingBtn.style.display = 'none';
+  }
+}
+
+// Override updateCartDisplay to include mobile updates
+const originalUpdateCartDisplay = updateCartDisplay;
+updateCartDisplay = function() {
+  originalUpdateCartDisplay();
+  updateCartCount();
+};
+
+// Initialize cart count
+updateCartCount();
+</script>
 
 </body>
 </html>
