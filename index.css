@@ -8,6 +8,14 @@
   font-family: Poppins, sans-serif;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  overflow-x: hidden;
+}
+
 /* ==============================
    NAVBAR
 ============================== */
@@ -18,17 +26,21 @@ nav {
   background: #004080;
   color: white;
   padding: 15px 30px;
+  position: relative;
+  flex-wrap: wrap;
 }
 
 nav .logo {
   font-size: 1.4rem;
   font-weight: bold;
+  z-index: 10;
 }
 
 nav .menu {
   display: flex;
   align-items: center;
   gap: 10px;
+  flex-wrap: wrap;
 }
 
 nav .menu a {
@@ -37,6 +49,7 @@ nav .menu a {
   text-decoration: none;
   font-weight: 500;
   transition: color 0.3s;
+  white-space: nowrap;
 }
 
 nav .menu a:hover {
@@ -68,37 +81,42 @@ nav .menu a.logout-btn:hover {
    HEADER
 ============================== */
 header {
-  background: linear-gradient(rgba(0, 64, 128, 0.6), rgba(0, 102, 204, 0.6)),
+  background: linear-gradient(rgba(0, 64, 128, 0.7), rgba(0, 102, 204, 0.7)),
     url("pexels-karolina-grabowska-7285980.jpg") no-repeat center center / cover;
   color: white;
   text-align: center;
   padding: 100px 20px;
+  position: relative;
 }
 
 header h1 {
   font-size: 2.5rem;
   margin-bottom: 15px;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 header p {
   font-size: 1.2rem;
   margin-bottom: 20px;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
 }
 
 header button {
   background: #ffcc00;
   border: none;
-  padding: 12px 25px;
+  padding: 12px 30px;
   font-size: 1rem;
-  border-radius: 5px;
+  border-radius: 8px;
   cursor: pointer;
   font-weight: bold;
-  transition: 0.3s;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
 }
 
 header button:hover {
   background: #e6b800;
-  transform: scale(1.05);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
 }
 
 /* ==============================
@@ -107,8 +125,23 @@ header button:hover {
 .section-title {
   text-align: center;
   margin: 50px 0 20px;
-  font-size: 1.8rem;
+  font-size: 2rem;
   color: #004080;
+  font-weight: 700;
+  position: relative;
+  padding-bottom: 15px;
+}
+
+.section-title::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80px;
+  height: 4px;
+  background: linear-gradient(90deg, #ffcc00, #b8741a);
+  border-radius: 2px;
 }
 
 /* ==============================
@@ -128,26 +161,26 @@ header button:hover {
   position: relative;
   width: 90%;
   max-width: 1300px;
-  height: 320px; /* bigger carousel height for larger cards */
+  height: 320px;
   display: flex;
   justify-content: center;
   align-items: center;
   perspective: 1200px;
-  margin-top: 40px; /* spacing from Category header */
+  margin-top: 40px;
 }
 
 /* Each card */
 .carousel-item {
   position: absolute;
-  width: 220px; /* slightly bigger card */
+  width: 220px;
   height: 280px;
   border-radius: 18px;
   overflow: hidden;
   transition: transform 0.8s ease, opacity 0.8s ease;
   opacity: 0.6;
   transform: scale(0.85);
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
-  background: #fff; /* solid white background */
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+  background: #fff;
 }
 
 /* Active (center) card */
@@ -155,6 +188,7 @@ header button:hover {
   transform: translateZ(180px) scale(1);
   opacity: 1;
   z-index: 5;
+  box-shadow: 0 15px 40px rgba(0, 64, 128, 0.3);
 }
 
 /* Left and right card positioning */
@@ -182,37 +216,49 @@ header button:hover {
   position: absolute;
   bottom: 12px;
   left: 12px;
-  background: rgba(0, 0, 0, 0.6);
-  padding: 8px 12px;
-  border-radius: 8px;
+  background: rgba(0, 64, 128, 0.85);
+  padding: 10px 14px;
+  border-radius: 10px;
   color: #fff;
   font-size: 0.9rem;
   text-align: left;
+  backdrop-filter: blur(5px);
+}
+
+.carousel-item .info h3 {
+  margin-bottom: 4px;
+  font-size: 1rem;
 }
 
 /* Carousel Buttons */
 .carousel-nav {
   display: flex;
   justify-content: center;
-  margin-top: 25px; /* increased from 10px to 25px */
+  margin-top: 30px;
   gap: 20px;
 }
 
 .carousel-nav button {
-  background-color: #b8741a;
+  background: linear-gradient(135deg, #b8741a 0%, #a36410 100%);
   color: white;
   border: none;
   border-radius: 50%;
-  width: 45px;
-  height: 45px;
-  font-size: 18px;
+  width: 50px;
+  height: 50px;
+  font-size: 20px;
   cursor: pointer;
-  transition: 0.3s ease;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
 }
 
 .carousel-nav button:hover {
-  background-color: #a36410;
-  transform: scale(1.1);
+  background: linear-gradient(135deg, #a36410 0%, #8a5209 100%);
+  transform: scale(1.15);
+  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
+}
+
+.carousel-nav button:active {
+  transform: scale(1.05);
 }
 
 
@@ -225,11 +271,11 @@ header button:hover {
   align-items: center;
   justify-content: center;
   flex-wrap: wrap;
-  background: #f5f7fa;
+  background: linear-gradient(135deg, #f5f7fa 0%, #e9eff5 100%);
   padding: 80px 20px;
   gap: 40px;
   border-radius: 20px;
-  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
   max-width: 1200px;
   margin: 60px auto;
   transition: transform 0.3s ease, box-shadow 0.3s ease;
@@ -237,7 +283,7 @@ header button:hover {
 
 #about:hover {
   transform: translateY(-5px);
-  box-shadow: 0 10px 25px rgba(0, 64, 128, 0.2);
+  box-shadow: 0 12px 30px rgba(0, 64, 128, 0.2);
 }
 
 #about .about-img {
@@ -249,8 +295,13 @@ header button:hover {
 #about .about-img img {
   width: 100%;
   border-radius: 15px;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
   object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+#about .about-img img:hover {
+  transform: scale(1.02);
 }
 
 #about .about-text {
@@ -263,10 +314,23 @@ header button:hover {
   color: #004080;
   font-size: 2rem;
   margin-bottom: 15px;
+  position: relative;
+  padding-bottom: 10px;
+}
+
+#about .about-text h2::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 60px;
+  height: 3px;
+  background: #ffcc00;
+  border-radius: 2px;
 }
 
 #about .about-text p {
-  line-height: 1.7;
+  line-height: 1.8;
   font-size: 1rem;
   color: #555;
 }
@@ -275,7 +339,7 @@ header button:hover {
    CONTACT SECTION (DIV)
 ============================== */
 #contact {
-  background: #eaf2ff;
+  background: linear-gradient(135deg, #eaf2ff 0%, #dce9f9 100%);
   padding: 80px 20px;
   display: flex;
   align-items: center;
@@ -283,7 +347,7 @@ header button:hover {
   flex-wrap: wrap;
   gap: 40px;
   border-radius: 20px;
-  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
   max-width: 1200px;
   margin: 60px auto;
   transition: transform 0.3s ease, box-shadow 0.3s ease;
@@ -291,7 +355,7 @@ header button:hover {
 
 #contact:hover {
   transform: translateY(-5px);
-  box-shadow: 0 10px 25px rgba(0, 64, 128, 0.2);
+  box-shadow: 0 12px 30px rgba(0, 64, 128, 0.2);
 }
 
 #contact .contact-info {
@@ -303,12 +367,26 @@ header button:hover {
   color: #004080;
   font-size: 2rem;
   margin-bottom: 15px;
+  position: relative;
+  padding-bottom: 10px;
+}
+
+#contact .contact-info h2::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 60px;
+  height: 3px;
+  background: #ffcc00;
+  border-radius: 2px;
 }
 
 #contact .contact-info p {
   font-size: 1rem;
   color: #555;
-  line-height: 1.7;
+  line-height: 1.8;
+  margin-bottom: 10px;
 }
 
 #contact .map {
@@ -321,7 +399,12 @@ header button:hover {
   width: 100%;
   border-radius: 15px;
   object-fit: cover;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+  transition: transform 0.3s ease;
+}
+
+#contact .map img:hover {
+  transform: scale(1.02);
 }
 
 /* ==============================
@@ -366,25 +449,45 @@ p .pmodal a {
 .modal-content {
   background: #fff;
   padding: 30px;
-  border-radius: 15px;
-  width: 350px;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+  border-radius: 20px;
+  width: 90%;
+  max-width: 400px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
   text-align: center;
   color: #000;
+  animation: modalSlideIn 0.3s ease;
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .modal-content h2 {
   margin-bottom: 20px;
   color: #004080;
+  font-size: 1.6rem;
 }
 
 .modal-content input {
   width: 100%;
   padding: 12px;
-  margin: 12px 0; /* slightly more space between inputs */
+  margin: 12px 0;
   border-radius: 8px;
   border: 1px solid #ccc;
   outline: none;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.modal-content input:focus {
+  border-color: #004080;
+  box-shadow: 0 0 0 3px rgba(0, 64, 128, 0.1);
 }
 
 .modal-content button {
@@ -397,12 +500,18 @@ p .pmodal a {
   color: white;
   font-size: 16px;
   cursor: pointer;
-  transition: 0.3s;
+  transition: all 0.3s ease;
+  font-weight: 600;
 }
 
 .modal-content button:hover {
   background: #0066cc;
-  transform: scale(1.03);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 102, 204, 0.3);
+}
+
+.modal-content button:active {
+  transform: translateY(0);
 }
 
 .modal-content a {
@@ -411,6 +520,7 @@ p .pmodal a {
   color: #004080;
   text-decoration: none;
   font-size: 14px;
+  transition: color 0.3s ease;
 }
 
 /* Make sure the helper paragraph under submit has breathing room */
@@ -427,6 +537,7 @@ p .pmodal a {
 }
 
 .modal-content a:hover {
+  color: #0066cc;
   text-decoration: underline;
 }
 
@@ -480,11 +591,62 @@ p .pmodal a {
 /* ==============================
    RESPONSIVE DESIGN
 ============================== */
+
+/* Tablet and below */
 @media (max-width: 900px) {
+  nav {
+    padding: 15px 20px;
+  }
+
+  nav .logo {
+    font-size: 1.2rem;
+  }
+
+  nav .menu {
+    gap: 8px;
+  }
+
+  nav .menu a {
+    margin: 0 5px;
+    font-size: 0.9rem;
+  }
+
+  header h1 {
+    font-size: 2rem;
+  }
+
+  header p {
+    font-size: 1.1rem;
+  }
+
+  .section-title {
+    font-size: 1.5rem;
+    margin: 40px 0 15px;
+  }
+
+  .carousel {
+    height: 280px;
+    margin-top: 30px;
+  }
+
+  .carousel-item {
+    width: 180px;
+    height: 240px;
+  }
+
+  .carousel-item.prev {
+    transform: translateX(-220px) rotateY(25deg);
+  }
+
+  .carousel-item.next {
+    transform: translateX(220px) rotateY(-25deg);
+  }
+
   #about, #contact {
     flex-direction: column;
     text-align: center;
     padding: 50px 20px;
+    margin: 40px 20px;
   }
 
   .about-img img,
@@ -495,6 +657,328 @@ p .pmodal a {
   .about-text,
   .contact-info {
     width: 100%;
+  }
+
+  #about .about-text h2,
+  #contact .contact-info h2 {
+    font-size: 1.7rem;
+  }
+}
+
+/* Mobile landscape and small tablets */
+@media (max-width: 768px) {
+  nav {
+    padding: 12px 15px;
+  }
+
+  nav .logo {
+    font-size: 1.1rem;
+  }
+
+  nav .menu {
+    width: 100%;
+    justify-content: center;
+    margin-top: 10px;
+    gap: 5px;
+  }
+
+  nav .menu a {
+    font-size: 0.85rem;
+    margin: 0 3px;
+    padding: 4px 8px;
+  }
+
+  header {
+    padding: 80px 15px;
+  }
+
+  header h1 {
+    font-size: 1.8rem;
+    margin-bottom: 12px;
+  }
+
+  header p {
+    font-size: 1rem;
+    margin-bottom: 15px;
+  }
+
+  header button {
+    padding: 10px 20px;
+    font-size: 0.95rem;
+  }
+
+  .carousel-container {
+    padding: 40px 0;
+  }
+
+  .carousel {
+    height: 250px;
+    margin-top: 20px;
+  }
+
+  .carousel-item {
+    width: 160px;
+    height: 220px;
+  }
+
+  .carousel-item.prev {
+    transform: translateX(-180px) rotateY(20deg);
+  }
+
+  .carousel-item.next {
+    transform: translateX(180px) rotateY(-20deg);
+  }
+
+  .carousel-item .info {
+    font-size: 0.85rem;
+    padding: 6px 10px;
+  }
+
+  .carousel-nav button {
+    width: 40px;
+    height: 40px;
+    font-size: 16px;
+  }
+
+  #about, #contact {
+    padding: 40px 15px;
+    margin: 30px 15px;
+    gap: 30px;
+  }
+
+  #about .about-text h2,
+  #contact .contact-info h2 {
+    font-size: 1.5rem;
+  }
+
+  #about .about-text p,
+  #contact .contact-info p {
+    font-size: 0.95rem;
+  }
+
+  .modal-content {
+    width: 90%;
+    max-width: 350px;
+    padding: 25px;
+  }
+
+  .modal-content h2 {
+    font-size: 1.4rem;
+  }
+}
+
+/* Mobile portrait */
+@media (max-width: 480px) {
+  nav {
+    padding: 10px 12px;
+  }
+
+  nav .logo {
+    font-size: 1rem;
+  }
+
+  nav .menu {
+    gap: 3px;
+    font-size: 0.75rem;
+  }
+
+  nav .menu a {
+    margin: 0 2px;
+    padding: 3px 6px;
+    font-size: 0.75rem;
+  }
+
+  nav .menu span {
+    font-size: 0.75rem;
+    margin-right: 5px;
+  }
+
+  header {
+    padding: 60px 12px;
+  }
+
+  header h1 {
+    font-size: 1.5rem;
+    margin-bottom: 10px;
+  }
+
+  header p {
+    font-size: 0.9rem;
+    margin-bottom: 12px;
+  }
+
+  header button {
+    padding: 10px 18px;
+    font-size: 0.9rem;
+  }
+
+  .section-title {
+    font-size: 1.3rem;
+    margin: 30px 0 12px;
+  }
+
+  .carousel-container {
+    padding: 30px 0;
+  }
+
+  .carousel {
+    height: 200px;
+    width: 95%;
+    margin-top: 15px;
+  }
+
+  .carousel-item {
+    width: 140px;
+    height: 190px;
+  }
+
+  .carousel-item.active {
+    transform: translateZ(100px) scale(1);
+  }
+
+  .carousel-item.prev {
+    transform: translateX(-150px) rotateY(15deg) scale(0.75);
+  }
+
+  .carousel-item.next {
+    transform: translateX(150px) rotateY(-15deg) scale(0.75);
+  }
+
+  .carousel-item .info {
+    font-size: 0.75rem;
+    padding: 5px 8px;
+    bottom: 8px;
+    left: 8px;
+  }
+
+  .carousel-item .info h3 {
+    font-size: 0.85rem;
+  }
+
+  .carousel-nav {
+    margin-top: 20px;
+    gap: 15px;
+  }
+
+  .carousel-nav button {
+    width: 36px;
+    height: 36px;
+    font-size: 14px;
+  }
+
+  #about, #contact {
+    padding: 30px 12px;
+    margin: 20px 10px;
+    gap: 25px;
+    border-radius: 15px;
+  }
+
+  #about .about-img,
+  #contact .map {
+    min-width: 100%;
+  }
+
+  #about .about-text,
+  #contact .contact-info {
+    min-width: 100%;
+  }
+
+  #about .about-text h2,
+  #contact .contact-info h2 {
+    font-size: 1.3rem;
+    margin-bottom: 12px;
+  }
+
+  #about .about-text p,
+  #contact .contact-info p {
+    font-size: 0.9rem;
+    line-height: 1.6;
+  }
+
+  footer {
+    padding: 12px;
+    font-size: 0.85rem;
+    margin-top: 30px;
+  }
+
+  .modal-content {
+    width: 95%;
+    max-width: 340px;
+    padding: 20px;
+  }
+
+  .modal-content h2 {
+    font-size: 1.3rem;
+    margin-bottom: 15px;
+  }
+
+  .modal-content input {
+    padding: 10px;
+    margin: 10px 0;
+    font-size: 0.9rem;
+  }
+
+  .modal-content button {
+    padding: 10px;
+    font-size: 0.9rem;
+  }
+
+  .modal-content form p {
+    font-size: 0.85rem;
+  }
+
+  .close {
+    font-size: 20px;
+  }
+}
+
+/* Extra small mobile devices */
+@media (max-width: 360px) {
+  nav .logo {
+    font-size: 0.9rem;
+  }
+
+  nav .menu a {
+    font-size: 0.7rem;
+    padding: 2px 4px;
+  }
+
+  header h1 {
+    font-size: 1.3rem;
+  }
+
+  header p {
+    font-size: 0.85rem;
+  }
+
+  header button {
+    padding: 8px 15px;
+    font-size: 0.85rem;
+  }
+
+  .carousel {
+    height: 180px;
+  }
+
+  .carousel-item {
+    width: 120px;
+    height: 170px;
+  }
+
+  .carousel-item.prev {
+    transform: translateX(-130px) rotateY(10deg) scale(0.7);
+  }
+
+  .carousel-item.next {
+    transform: translateX(130px) rotateY(-10deg) scale(0.7);
+  }
+
+  .modal-content {
+    padding: 15px;
+  }
+
+  .modal-content h2 {
+    font-size: 1.2rem;
   }
 }
 
