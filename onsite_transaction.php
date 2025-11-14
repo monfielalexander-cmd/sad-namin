@@ -120,8 +120,8 @@ while ($row = $monthly_sales_result->fetch_assoc()) {
         <h2>Onsite POS Transactions</h2>
 
         <?php if (isset($_GET['inserted'])): ?>
-          <div style="padding:10px;background:#e6ffea;border:1px solid #b7f0c6;margin:10px 0;border-radius:6px;">
-            Transaction saved successfully.
+          <div class="success-message">
+            ✅ Transaction saved successfully!
           </div>
         <?php endif; ?>
 
@@ -169,22 +169,22 @@ while ($row = $monthly_sales_result->fetch_assoc()) {
           </tbody>
         </table>
 
-        <div style="margin-top:12px;">
+        <div class="pagination">
           <?php if ($current_page > 1): ?>
-            <a href="?page=<?= $current_page - 1 ?>" class="back-btn" style="background:#004080;margin-right:8px;">← Previous</a>
+            <a href="?page=<?= $current_page - 1 ?>">← Previous</a>
           <?php endif; ?>
-          Page <?= $current_page ?> of <?= $total_pages ?> (Total: <?= $total_records ?> records)
+          <span>Page <?= $current_page ?> of <?= $total_pages ?> (Total: <?= $total_records ?> records)</span>
           <?php if ($current_page < $total_pages): ?>
-            <a href="?page=<?= $current_page + 1 ?>" class="back-btn" style="background:#004080;margin-left:8px;">Next →</a>
+            <a href="?page=<?= $current_page + 1 ?>">Next →</a>
           <?php endif; ?>
         </div>
     </div>
 
     <!-- RIGHT SIDE: SALES CHART -->
-    <div style="flex:1; background:#fff; padding:20px; border-radius:12px; box-shadow:0 3px 8px rgba(0,0,0,0.08);">
-        <h3>Sales Summary (Onsite)</h3>
+    <div class="chart-container">
+        <h3>📊 Sales Summary (Onsite)</h3>
         <p>Total Revenue: <strong>₱<?= number_format($total_revenue,2) ?></strong></p>
-        <canvas id="salesChart" style="width:100%; height:260px;"></canvas>
+        <canvas id="salesChart"></canvas>
     </div>
 
 </div>
