@@ -34,7 +34,6 @@ $categories = $conn->query("SELECT DISTINCT category FROM products_ko WHERE cate
   <div class="nav-buttons">
     <a href="admin.php"><button class="back-btn">⬅ Back to Dashboard</button></a>
     <a href="onsite_transaction.php"><button class="onsite-btn">Onsite Transactions</button></a>
-    <button id="toggleCartBtn" class="floating-cart-btn">🛒</button>
   </div>
 </nav>
 
@@ -64,7 +63,8 @@ $categories = $conn->query("SELECT DISTINCT category FROM products_ko WHERE cate
            data-id="<?= $p['id'] ?>"
            data-name="<?= htmlspecialchars($p['name']) ?>"
            data-category="<?= htmlspecialchars($p['category']) ?>"
-           data-price="<?= $p['price'] ?>">
+           data-price="<?= $p['price'] ?>"
+           data-stock="<?= $p['stock'] ?>">
         <?php if (!empty($p['image'])): ?>
           <img src="<?= htmlspecialchars($p['image']) ?>" alt="<?= htmlspecialchars($p['name']) ?>">
         <?php else: ?>
@@ -147,21 +147,31 @@ $categories = $conn->query("SELECT DISTINCT category FROM products_ko WHERE cate
         <span>Subtotal:</span>
         <span id="subtotalAmount">₱0.00</span>
       </div>
-      <div class="breakdown-item">
-        <span>Tax (12%):</span>
-        <span id="taxAmount">₱0.00</span>
-      </div>
       <div class="breakdown-item total-line">
         <span><strong>Total:</strong></span>
         <span id="finalTotal"><strong>₱0.00</strong></span>
       </div>
     </div>
     
-    <button type="button" class="confirm-btn" onclick="confirmTransaction()">Confirm Transaction</button>
+    <button type="button" class="confirm-btn" onclick="confirmTransaction()" id="confirmBtn">Confirm Transaction</button>
     <button type="button" class="cancel-btn" onclick="cancelCheckout()">Cancel</button>
+    <div class="transaction-status" id="transactionStatus" style="display: none;"></div>
   </div>
   
 <button type="button" class="checkout-btn" onclick="initiateCheckout()">Checkout</button>
+</div>
+
+<!-- Receipt Modal -->
+<div class="receipt-container" id="receiptContainer">
+  <div class="receipt-modal">
+    <div class="receipt" id="receiptContent">
+      <!-- Receipt content will be generated here -->
+    </div>
+    <div class="receipt-buttons">
+      <button class="receipt-btn print-btn" onclick="printReceipt()">🖨️ Print Receipt</button>
+      <button class="receipt-btn close-receipt-btn" onclick="closeReceipt()">✕ Close</button>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -185,7 +195,7 @@ function updateCartDisplay() {
         <div class="qty-controls">
 <button onclick="changeQty('${id}', -1)">-</button>
 <span>${item.qty}</span>
-<button onclick="changeQty('${id}', 1)">+</button>
+<button onclick="changeQty('${id}', 1)" ${item.qty >= item.stock ? 'disabled style="opacity: 0.5; cursor: not-allowed;"' : ''}>+</button>
         </div>
       </td>
       <td>₱${(item.price * item.qty).toFixed(2)}</td>
@@ -210,11 +220,17 @@ document.querySelectorAll('.add-cart-btn').forEach(btn => {
     const name = card.dataset.name;
     const category = card.dataset.category;
     const price = parseFloat(card.dataset.price);
+    const stock = parseInt(card.dataset.stock);
 
     if (!cart[id]) {
-      cart[id] = { name, category, price, qty: 1 };
+      cart[id] = { name, category, price, stock, qty: 1 };
     } else {
-      cart[id].qty++;
+      if (cart[id].qty < stock) {
+        cart[id].qty++;
+      } else {
+        alert(`Cannot add more items. Only ${stock} in stock.`);
+        return;
+      }
     }
 
     updateCartDisplay();
@@ -229,18 +245,16 @@ function initiateCheckout() {
     return;
   }
 
-  // Calculate totals
+  // Calculate totals (no tax)
   let subtotal = 0;
   for (const id in cart) {
     subtotal += cart[id].price * cart[id].qty;
   }
   
-  const tax = subtotal * 0.12; // 12% tax
-  currentTotal = subtotal + tax;
+  currentTotal = subtotal; // No tax added
   
   // Update breakdown display
   document.getElementById('subtotalAmount').textContent = `₱${subtotal.toFixed(2)}`;
-  document.getElementById('taxAmount').textContent = `₱${tax.toFixed(2)}`;
   document.getElementById('finalTotal').textContent = `₱${currentTotal.toFixed(2)}`;
   
   // Show checkout section
@@ -311,7 +325,7 @@ function confirmTransaction() {
 
   const transactionData = {
     subtotal: subtotal,
-    tax: subtotal * 0.12,
+    tax: 0,
     total: currentTotal,
     items: items,
     payment_mode: paymentMode,
@@ -320,8 +334,11 @@ function confirmTransaction() {
     change: paymentMode === 'cash' ? Math.max(0, parseFloat(document.getElementById('cashAmount').value) - currentTotal) : 0
   };
 
-  document.getElementById('transactionData').value = JSON.stringify(transactionData);
-  document.getElementById('checkoutForm').submit();
+  // Show receipt and automatically save to database
+  showReceipt(transactionData);
+  
+  // Automatically submit to database
+  submitTransactionToServer(transactionData);
 }
 
 function cancelCheckout() {
@@ -359,14 +376,19 @@ function updateCartCount() {
   const itemCount = Object.keys(cart).reduce((sum, id) => sum + cart[id].qty, 0);
   document.getElementById('cartCount').textContent = itemCount;
   
-  // Show/hide floating button based on cart contents
+  // Show/hide floating button based on cart contents and screen size
   const floatingBtn = document.getElementById('floatingCartBtn');
-  if (itemCount > 0) {
+  const isMobile = window.innerWidth <= 768;
+  
+  if (itemCount > 0 && isMobile) {
     floatingBtn.style.display = 'flex';
   } else {
     floatingBtn.style.display = 'none';
   }
 }
+
+// Add window resize listener to handle screen size changes
+window.addEventListener('resize', updateCartCount);
 
 // Override updateCartDisplay to include mobile updates
 const originalUpdateCartDisplay = updateCartDisplay;
@@ -377,6 +399,196 @@ updateCartDisplay = function() {
 
 // Initialize cart count
 updateCartCount();
+
+
+
+// Receipt functions
+function showReceipt(transactionData) {
+  const receiptContent = document.getElementById('receiptContent');
+  const now = new Date();
+  const receiptNumber = 'R' + now.getFullYear() + (now.getMonth()+1).toString().padStart(2,'0') + now.getDate().toString().padStart(2,'0') + now.getTime().toString().slice(-6);
+  
+  let receiptHTML = `
+    <div class="receipt-header">
+      <h2>ABETH HARDWARE</h2>
+      <p>Point of Sale System</p>
+      <p>Date: ${now.toLocaleDateString()} ${now.toLocaleTimeString()}</p>
+      <p>Receipt #: ${receiptNumber}</p>
+    </div>
+    
+    <div class="receipt-separator"></div>
+    
+    <div class="receipt-info">
+      <div class="info-row">
+        <span>Cashier:</span>
+        <span><?= $_SESSION['username'] ?></span>
+      </div>
+      <div class="info-separator"></div>
+      <div class="info-row">
+        <span>Payment:</span>
+        <span>${transactionData.payment_mode.toUpperCase()}</span>
+      </div>
+    </div>
+    
+    <div class="receipt-items-separator"></div>
+    
+    <div class="receipt-items">`;
+  
+  transactionData.items.forEach(item => {
+    const itemTotal = item.qty * item.price;
+    receiptHTML += `
+      <div class="receipt-item-row">
+        <div class="item-name">${item.name}</div>
+        <div class="item-price">₱${itemTotal.toFixed(2)}</div>
+      </div>
+      <div class="item-qty-line">${item.qty} x ₱${item.price.toFixed(2)}</div>`;
+  });
+  
+  receiptHTML += `
+    </div>
+    
+    <div class="receipt-items-separator"></div>
+    
+    <div class="receipt-totals">
+      <div class="total-row">
+        <span>Subtotal:</span>
+        <span>₱${transactionData.subtotal.toFixed(2)}</span>
+      </div>`;
+  
+  if (transactionData.payment_mode === 'cash') {
+    receiptHTML += `
+      <div class="total-row">
+        <span>Cash:</span>
+        <span>₱${transactionData.cash_amount.toFixed(2)}</span>
+      </div>
+      <div class="total-row">
+        <span>Change:</span>
+        <span>₱${transactionData.change.toFixed(2)}</span>
+      </div>`;
+  } else if (transactionData.payment_mode === 'gcash') {
+    receiptHTML += `
+      <div class="total-row">
+        <span>GCash Ref:</span>
+        <span>${transactionData.gcash_ref}</span>
+      </div>`;
+  }
+  
+  receiptHTML += `
+      <div class="final-total">
+        <span>TOTAL:</span>
+        <span>₱${transactionData.total.toFixed(2)}</span>
+      </div>
+    </div>
+    
+    <div class="receipt-separator"></div>
+    
+    <div class="receipt-footer">
+      <p>Thank you for your purchase!</p>
+      <p>Please come again</p>
+      <br>
+      <p>This serves as your official receipt</p>
+    </div>`;
+  
+  receiptContent.innerHTML = receiptHTML;
+  document.getElementById('receiptContainer').style.display = 'flex';
+}
+
+function printReceipt() {
+  // For web browsers - standard print
+  window.print();
+  
+  // For thermal printers, you can add specific printer commands here
+  // This would require additional libraries like escpos or printer-specific APIs
+  
+  // Example for ESC/POS thermal printers (requires additional setup):
+  // printToThermalPrinter();
+}
+
+function printToThermalPrinter() {
+  // This function would handle thermal printer communication
+  // You would need to implement printer-specific protocols
+  // Common thermal printer protocols: ESC/POS, CPCL, ZPL
+  
+  try {
+    // Example implementation would go here
+    // This typically requires:
+    // 1. Printer driver installation
+    // 2. USB/Serial/Network connection setup
+    // 3. Printer-specific command formatting
+    
+    console.log('Thermal printer functionality would be implemented here');
+    alert('Receipt sent to thermal printer! (Implementation depends on your specific printer model)');
+  } catch (error) {
+    console.error('Printer error:', error);
+    alert('Printer not available. Using standard print instead.');
+    window.print();
+  }
+}
+
+function closeReceipt() {
+  document.getElementById('receiptContainer').style.display = 'none';
+  
+  // Clear cart and reset form after successful transaction
+  cart = {};
+  updateCartDisplay();
+  
+  // Hide checkout section and show checkout button again
+  document.getElementById('checkoutSection').style.display = 'none';
+  document.querySelector('.checkout-btn').style.display = 'block';
+  
+  // Reset form
+  document.getElementById('cashAmount').value = '';
+  document.getElementById('gcashRef').value = '';
+  document.getElementById('changeDisplay').innerHTML = '<strong>Change: ₱0.00</strong>';
+  document.querySelector('input[value="cash"]').checked = true;
+  togglePaymentMethod();
+  
+  // Transaction is already saved automatically when confirmed
+  console.log('Transaction completed and saved to database');
+}
+
+function submitTransactionToServer(transactionData) {
+  // Show loading status
+  const statusDiv = document.getElementById('transactionStatus');
+  statusDiv.innerHTML = '💾 Saving transaction to database...';
+  statusDiv.style.display = 'block';
+  statusDiv.style.background = 'linear-gradient(45deg, #3498db, #2980b9)';
+  statusDiv.style.color = 'white';
+  statusDiv.style.padding = '10px';
+  statusDiv.style.borderRadius = '8px';
+  statusDiv.style.textAlign = 'center';
+  statusDiv.style.marginTop = '10px';
+  
+  // Save transaction data to database via AJAX to avoid page redirect
+  const formData = new FormData();
+  formData.append('transaction_data', JSON.stringify(transactionData));
+  
+  fetch('onsite_transaction.php', {
+    method: 'POST',
+    body: formData
+  })
+  .then(response => {
+    if (response.ok) {
+      console.log('Transaction saved successfully to database');
+      statusDiv.innerHTML = '✅ Transaction saved successfully!';
+      statusDiv.style.background = 'linear-gradient(45deg, #27ae60, #2ecc71)';
+      
+      // Hide status after 3 seconds
+      setTimeout(() => {
+        statusDiv.style.display = 'none';
+      }, 3000);
+    } else {
+      console.error('Error saving transaction to database');
+      statusDiv.innerHTML = '⚠️ Warning: Issue saving to database';
+      statusDiv.style.background = 'linear-gradient(45deg, #e74c3c, #c0392b)';
+    }
+  })
+  .catch(error => {
+    console.error('Network error saving transaction:', error);
+    statusDiv.innerHTML = '⚠️ Network error saving transaction';
+    statusDiv.style.background = 'linear-gradient(45deg, #e74c3c, #c0392b)';
+  });
+}
 </script>
 
 </body>

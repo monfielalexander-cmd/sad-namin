@@ -146,9 +146,10 @@ header {
     url("pexels-karolina-grabowska-7285980.jpg") no-repeat center center / cover;
   color: white;
   text-align: center;
-  padding: 120px 20px;
+  padding: 200px 20px;
   position: relative;
   overflow: hidden;
+  min-height: 700px;
 }
 
 header::before {
@@ -260,7 +261,7 @@ header button:active {
 ============================== */
 .carousel-container {
   width: 100%;
-  padding: 60px 0 60px; /* space under header */
+  padding: 100px 0 80px; /* space under header */
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -926,7 +927,8 @@ p .pmodal a {
   }
   
   header {
-    padding: 80px 20px;
+    padding: 150px 20px;
+    min-height: 650px;
   }
   
   header h1 {
@@ -995,6 +997,11 @@ p .pmodal a {
   nav .menu a {
     font-size: 0.9rem;
     padding: 6px 10px;
+  }
+  
+  header {
+    padding: 120px 20px;
+    min-height: 400px;
   }
   
   header h1 {

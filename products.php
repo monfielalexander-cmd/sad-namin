@@ -41,11 +41,16 @@ if (isset($_POST['add_to_cart'])) {
 /* ---------------- UPDATE CART ---------------- */
 if (isset($_POST['increase_qty']) || isset($_POST['decrease_qty'])) {
     $cart_id = intval($_POST['cart_id']);
-    $result = $conn->query("SELECT quantity FROM cart WHERE cart_id='$cart_id' AND customer_id='$customer_id'");
+    $result = $conn->query("SELECT c.quantity, c.product_id, p.stock FROM cart c JOIN products_ko p ON c.product_id = p.id WHERE c.cart_id='$cart_id' AND c.customer_id='$customer_id'");
     if ($result && $result->num_rows > 0) {
         $row = $result->fetch_assoc();
         $qty = $row['quantity'];
-        if (isset($_POST['increase_qty'])) $qty++;
+        $stock = $row['stock'];
+        if (isset($_POST['increase_qty'])) {
+            if ($qty < $stock) {
+                $qty++;
+            }
+        }
         if (isset($_POST['decrease_qty'])) $qty--;
         if ($qty > 0) {
             $conn->query("UPDATE cart SET quantity='$qty' WHERE cart_id='$cart_id'");
@@ -183,7 +188,7 @@ if (!empty($selected_category)) {
 }
 $categories = $conn->query("SELECT DISTINCT category FROM products_ko WHERE category IS NOT NULL AND category != ''");
 
-$cart = $conn->query("SELECT c.cart_id, p.name, p.price, p.category, c.quantity FROM cart c JOIN products_ko p ON c.product_id = p.id WHERE c.customer_id='$customer_id'");
+$cart = $conn->query("SELECT c.cart_id, c.product_id, p.name, p.price, p.category, p.stock, c.quantity FROM cart c JOIN products_ko p ON c.product_id = p.id WHERE c.customer_id='$customer_id'");
 $transactions_result = $conn->query("
     SELECT t.transaction_id, t.transaction_date, t.total_amount, ti.product_name, ti.quantity, ti.price
     FROM transactions t
@@ -317,7 +322,7 @@ if ($transactions_result) {
                 <span class="qty-display"><?= $item['quantity'] ?></span>
                 <form method="POST" style="display:inline;">
                   <input type="hidden" name="cart_id" value="<?= $item['cart_id'] ?>">
-                  <button class="qty-btn" name="increase_qty">+</button>
+                  <button class="qty-btn" name="increase_qty" <?= ($item['quantity'] >= $item['stock']) ? 'disabled style="opacity: 0.5; cursor: not-allowed;"' : '' ?>>+</button>
                 </form>
               </div>
             </div>

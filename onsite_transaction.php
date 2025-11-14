@@ -182,9 +182,11 @@ while ($row = $monthly_sales_result->fetch_assoc()) {
 
     <!-- RIGHT SIDE: SALES CHART -->
     <div class="chart-container">
-        <h3>📊 Sales Summary (Onsite)</h3>
+        <h3>📊 Monthly Sales Distribution</h3>
         <p>Total Revenue: <strong>₱<?= number_format($total_revenue,2) ?></strong></p>
-        <canvas id="salesChart"></canvas>
+        <div class="chart-wrapper" style="height: 400px; width: 400px; margin: 20px auto;">
+          <canvas id="salesChart"></canvas>
+        </div>
     </div>
 
 </div>
@@ -223,19 +225,62 @@ document.querySelectorAll(".view-items").forEach(btn => {
 function closeModal(){ document.getElementById("itemsModal").style.display = "none"; }
 
 new Chart(document.getElementById('salesChart'), {
-  type: 'bar',
+  type: 'pie',
   data: { 
     labels: <?= json_encode($months) ?>, 
     datasets: [{
       label: 'Monthly Sales (₱)',
       data: <?= json_encode($sales) ?>,
-      backgroundColor: 'rgba(0, 64, 128, 0.7)',
-      borderColor: '#003060',
-      borderWidth: 1,
-      borderRadius: 8
+      backgroundColor: [
+        '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', 
+        '#FECA57', '#FF9FF3', '#54A0FF', '#5F27CD',
+        '#00D2D3', '#FF9F43', '#10AC84', '#EE5A24'
+      ],
+      borderColor: '#ffffff',
+      borderWidth: 3,
+      hoverBorderWidth: 5,
+      hoverOffset: 15
     }]
   },
-  options: { scales: { y: { beginAtZero: true } } }
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: 'bottom',
+        labels: {
+          padding: 20,
+          usePointStyle: true,
+          font: {
+            size: 12
+          }
+        }
+      },
+      tooltip: {
+        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+        titleColor: '#ffffff',
+        bodyColor: '#ffffff',
+        borderColor: '#ffffff',
+        borderWidth: 1,
+        cornerRadius: 8,
+        callbacks: {
+          label: function(context) {
+            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+            const percentage = ((context.raw / total) * 100).toFixed(1);
+            return `${context.label}: ₱${context.raw.toFixed(2)} (${percentage}%)`;
+          }
+        }
+      }
+    },
+    animation: {
+      animateScale: true,
+      animateRotate: true,
+      duration: 1000
+    },
+    onHover: (event, elements) => {
+      event.native.target.style.cursor = elements.length > 0 ? 'pointer' : 'default';
+    }
+  }
 });
 </script>
 
