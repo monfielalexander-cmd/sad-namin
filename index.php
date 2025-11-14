@@ -229,7 +229,6 @@
         }
       }
 
-      // Register form password match validation
       document.addEventListener('DOMContentLoaded', function() {
         var regForm = document.getElementById('register-form');
         if (regForm) {
