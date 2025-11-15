@@ -371,7 +371,7 @@ tbody tr:hover {
 .modal-box h3 {
   background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
   color: white !important;
-  margin: 0;
+  margin: 10px;
   padding: 25px 35px 30px;
   font-size: 1.4rem;
   font-weight: 700;
@@ -417,12 +417,12 @@ tbody tr:hover {
   }
   
   .modal-content {
-    padding: 25px 40px !important;
+    padding: 0 !important;
   }
   
   .modal-content table {
-    width: calc(100% - 30px) !important;
-    margin: 20px 15px !important;
+    width: 100% !important;
+    margin: 0 !important;
   }
   
   .modal-box h3 {
@@ -430,7 +430,7 @@ tbody tr:hover {
   }
   
   .modal-footer {
-    padding: 35px 40px 30px !important;
+    padding: 20px !important;
     display: flex !important;
     justify-content: center !important;
     align-items: center !important;
@@ -454,28 +454,29 @@ tbody tr:hover {
 .modal-content {
   flex: 1;
   overflow-y: auto;
-  padding: 25px 35px;
+  padding: 0;
   min-height: 250px;
-  background: linear-gradient(145deg, #fafbfc 0%, #f8faff 100%);
+  background: #ffffff;
   position: relative;
+  border-radius: 0;
 }
 
-/* Enhanced Modal Table Styling - Base */
+/* Enhanced Modal Table Styling - Clean Full Width Layout */
 .modal-content table {
-  width: calc(100% - 20px);
-  margin: 15px 10px;
+  width: 100%;
+  margin: 0;
   border-collapse: collapse;
-  background: white;
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 0 4px 20px rgba(30, 60, 114, 0.1);
-  border: 1px solid rgba(30, 60, 114, 0.08);
+  background: #ffffff;
+  border-radius: 0;
+  overflow: visible;
+  box-shadow: none;
+  border: none;
 }
 
 .modal-content table th {
   background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
   color: white;
-  padding: 18px 16px;
+  padding: 20px 24px;
   font-size: 0.95rem;
   font-weight: 600;
   text-transform: uppercase;
@@ -495,12 +496,14 @@ tbody tr:hover {
 }
 
 .modal-content table td {
-  padding: 16px;
-  border-bottom: 1px solid rgba(30, 60, 114, 0.06);
+  padding: 20px 24px;
+  border-bottom: 1px solid rgba(30, 60, 114, 0.08);
   font-size: 1rem;
   color: var(--text-dark);
-  background: white;
+  background: #ffffff;
   transition: all 0.2s ease;
+  border-left: none;
+  border-right: none;
 }
 
 .modal-content table tbody tr:nth-child(even) td {
@@ -515,6 +518,10 @@ tbody tr:hover {
 
 .modal-content table tbody tr:last-child td {
   border-bottom: none;
+}
+
+.modal-content table tbody tr:first-child td {
+  border-top: none;
 }
 
 /* Price highlighting */
@@ -533,10 +540,10 @@ tbody tr:hover {
 
 
 
-/* Modal Footer - Centered Button v2.4 */
+/* Modal Footer - Clean Layout v2.6 */
 .modal-footer {
   flex-shrink: 0;
-  padding: 30px 35px 25px;
+  padding: 20px;
   border-top: 1px solid rgba(30, 60, 114, 0.1);
   background: linear-gradient(145deg, #f8faff 0%, #f0f8ff 100%);
   border-radius: 0 0 15px 15px;
@@ -544,6 +551,7 @@ tbody tr:hover {
   display: flex;
   justify-content: center;
   align-items: center;
+  width: 100%;
 }
 
 /* Close Button Compact Design v2.4 - CENTERED WITH TOP GAP */
@@ -560,8 +568,8 @@ tbody tr:hover {
   box-shadow: 0 2px 8px rgba(231, 76, 60, 0.3);
   text-transform: uppercase;
   letter-spacing: 0.2px;
-  margin: 0;
-  position: relative;
+  margin: 10px;
+  position: center;
   overflow: hidden;
   display: inline-flex;
   align-items: center;
@@ -716,17 +724,21 @@ tbody tr:hover {
   }
   
   .modal-content {
-    padding: 20px 25px;
+    padding: 0;
   }
   
   .modal-content table {
-    width: calc(100% - 10px);
-    margin: 10px 5px;
+    width: 100%;
+    margin: 0;
   }
   
-  .modal-box table th,
-  .modal-box table td {
-    padding: 12px 10px;
+  .modal-content table th {
+    padding: 16px 20px;
+    font-size: 0.9.rem;
+  }
+  
+  .modal-content table td {
+    padding: 16px 20px;
     font-size: 0.9rem;
   }
   
@@ -737,7 +749,10 @@ tbody tr:hover {
   }
   
   .modal-footer {
-    padding: 25px 25px 20px;
+    padding: 20px !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
   }
   
   .pagination a {
