@@ -40,6 +40,8 @@ $query = "
         t.order_type,
         t.delivery_address,
         t.contact_number,
+        t.payment_method,
+        t.gcash_reference,
         t.status
     FROM transactions t
     LEFT JOIN users u ON t.user_id = u.id
@@ -69,6 +71,8 @@ $transactions = $conn->query($query);
             <th>ID</th>
             <th>Customer</th>
             <th>Method</th>
+            <th>Payment</th>
+            <th>GCash Ref</th>
             <th>Address</th>
             <th>Total</th>
             <th>Date</th>
@@ -87,6 +91,21 @@ $transactions = $conn->query($query);
                     <td><?= $row['transaction_id'] ?></td>
                     <td><?= htmlspecialchars($customer_name) ?></td>
                     <td><?= htmlspecialchars(ucfirst($row['order_type'])) ?></td>
+                    <td>
+                        <span class="payment-badge <?= strtolower($row['payment_method'] ?? 'n/a') ?>">
+                            <?= htmlspecialchars(ucfirst($row['payment_method'] ?? 'N/A')) ?>
+                        </span>
+                    </td>
+                    <td>
+                        <?php if (!empty($row['gcash_reference'])): ?>
+                            <span class="gcash-ref" title="Click to copy" onclick="copyToClipboard('<?= htmlspecialchars($row['gcash_reference']) ?>')">
+                                <?= htmlspecialchars($row['gcash_reference']) ?>
+                                <span class="copy-icon">📋</span>
+                            </span>
+                        <?php else: ?>
+                            <span class="text-muted">—</span>
+                        <?php endif; ?>
+                    </td>
                     <td><?= htmlspecialchars($row['delivery_address'] ?? 'N/A') ?></td>
                     <td>₱<?= number_format($row['total_amount'], 2) ?></td>
                     <td><?= htmlspecialchars($row['transaction_date']) ?></td>
@@ -106,7 +125,7 @@ $transactions = $conn->query($query);
                 </tr>
             <?php endwhile; ?>
         <?php else: ?>
-            <tr><td colspan="8">No transactions found.</td></tr>
+            <tr><td colspan="10">No transactions found.</td></tr>
         <?php endif; ?>
     </table>
 
@@ -130,6 +149,18 @@ $transactions = $conn->query($query);
 </div>
 
 <script>
+// Copy GCash reference to clipboard
+function copyToClipboard(text) {
+    navigator.clipboard.writeText(text).then(() => {
+        // Show temporary success message
+        const tooltip = document.createElement('div');
+        tooltip.textContent = 'Copied!';
+        tooltip.style.cssText = 'position: fixed; top: 20px; right: 20px; background: #27ae60; color: white; padding: 10px 20px; border-radius: 5px; z-index: 9999; font-weight: 600;';
+        document.body.appendChild(tooltip);
+        setTimeout(() => tooltip.remove(), 2000);
+    });
+}
+
 document.querySelectorAll('.status-toggle').forEach(toggle => {
     toggle.addEventListener('change', function() {
         const transactionId = this.dataset.id;

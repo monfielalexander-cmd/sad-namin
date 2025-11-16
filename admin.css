@@ -318,8 +318,9 @@ nav .menu a.logout-btn:hover {
   padding: 40px;
   min-height: 80vh;
   position: relative;
-  max-width: 1400px;
+  max-width: 100%;
   margin: 0 auto;
+  width: 98%;
 }
 
 .admin-panel > h3 {
@@ -409,12 +410,13 @@ nav .menu a.logout-btn:hover {
   box-shadow: var(--shadow-medium);
   margin-top: 20px;
   border: 1px solid rgba(255, 255, 255, 0.8);
+  table-layout: auto;
 }
 
 .product-table th,
 .product-table td {
-  padding: 15px 12px;
-  text-align: left;
+  padding: 15px 8px;
+  text-align: center;
   border-bottom: 1px solid rgba(0, 64, 128, 0.1);
 }
 
@@ -424,10 +426,11 @@ nav .menu a.logout-btn:hover {
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   position: sticky;
   top: 0;
   z-index: 10;
+  white-space: nowrap;
 }
 
 .product-table tbody tr {
@@ -445,7 +448,7 @@ nav .menu a.logout-btn:hover {
 }
 
 .product-table td {
-  font-size: 0.95rem;
+  font-size: 0.85rem;
   color: var(--text-dark);
 }
 

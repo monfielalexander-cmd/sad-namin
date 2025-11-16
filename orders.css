@@ -38,9 +38,9 @@ body {
 }
 
 .orders-wrapper {
-  width: 95%;
-  max-width: 1200px;
-  margin: 40px auto;
+  width: 98%;
+  max-width: 100%;
+  margin: 20px auto;
   background: linear-gradient(145deg, #ffffff 0%, #f8faff 100%);
   border-radius: var(--border-radius);
   padding: 30px;
@@ -124,24 +124,26 @@ body {
   border-radius: var(--border-radius);
   overflow: hidden;
   box-shadow: var(--shadow-light);
+  table-layout: auto;
 }
 
 .orders-table th {
   background: linear-gradient(135deg, var(--primary-blue) 0%, #0056b3 100%);
   color: white;
-  padding: 15px 12px;
+  padding: 15px 8px;
   font-weight: 600;
-  font-size: 0.95rem;
+  font-size: 0.85rem;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   border: none;
+  white-space: nowrap;
 }
 
 .orders-table td {
   border: none;
   border-bottom: 1px solid rgba(0, 64, 128, 0.1);
-  padding: 15px 12px;
-  font-size: 0.9rem;
+  padding: 15px 8px;
+  font-size: 0.85rem;
   transition: var(--transition);
 }
 
@@ -188,6 +190,77 @@ body {
 @keyframes pulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.7; }
+}
+
+/* ==============================
+   PAYMENT & GCASH REFERENCE STYLES
+============================== */
+.payment-badge {
+  padding: 6px 12px;
+  border-radius: 15px;
+  font-weight: 600;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  display: inline-block;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  transition: var(--transition);
+}
+
+.payment-badge.gcash {
+  background: linear-gradient(45deg, #007dfe, #00a8ff);
+  color: white;
+}
+
+.payment-badge.cod {
+  background: linear-gradient(45deg, #95a5a6, #7f8c8d);
+  color: white;
+}
+
+.payment-badge.n\/a,
+.payment-badge.na {
+  background: linear-gradient(45deg, #e0e0e0, #bdbdbd);
+  color: #666;
+}
+
+.gcash-ref {
+  font-family: 'Courier New', monospace;
+  background: linear-gradient(145deg, #e8f5e9, #c8e6c9);
+  color: #2e7d32;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: var(--transition);
+  border: 1px solid #81c784;
+  box-shadow: 0 2px 8px rgba(46, 125, 50, 0.15);
+}
+
+.gcash-ref:hover {
+  background: linear-gradient(145deg, #c8e6c9, #a5d6a7);
+  transform: scale(1.02);
+  box-shadow: 0 4px 12px rgba(46, 125, 50, 0.25);
+}
+
+.copy-icon {
+  font-size: 0.9rem;
+  opacity: 0.7;
+  transition: var(--transition);
+}
+
+.gcash-ref:hover .copy-icon {
+  opacity: 1;
+  transform: scale(1.2);
+}
+
+.text-muted {
+  color: #999;
+  font-style: italic;
+  font-size: 0.85rem;
 }
 
 /* ==============================
