@@ -98,7 +98,7 @@
         <p><b>Business Hours:</b> Mon–Sat: 8:00 AM – 5:00 PM</p>
       </div>
       <div class="map">
-        <img src="map.jpg" alt="Abeth Hardware Location">
+        <img src="images/mapnila.jpg" alt="Abeth Hardware Location">
       </div>
     </div>
 
