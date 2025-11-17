@@ -165,6 +165,7 @@ body {
   box-sizing: border-box;
   flex-wrap: wrap;
   position: relative;
+  overflow-x: hidden;
 }
 
 /* ✅ FIX ADDED HERE – moved product section closer to top */
@@ -188,6 +189,28 @@ body {
   flex: 1;
   width: 100%;
   transition: all 0.3s ease;
+  max-width: calc(100% - 420px);
+  overflow-y: auto;
+  max-height: calc(100vh - 100px);
+  padding-right: 20px;
+}
+
+.left-panel::-webkit-scrollbar {
+  width: 8px;
+}
+
+.left-panel::-webkit-scrollbar-track {
+  background: rgba(0, 64, 128, 0.05);
+  border-radius: 4px;
+}
+
+.left-panel::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, var(--primary-blue), #0056b3);
+  border-radius: 4px;
+}
+
+.left-panel::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #0056b3, var(--primary-blue));
 }
 
 .right-panel {
@@ -1312,10 +1335,12 @@ form[method="GET"] select:focus {
   max-width: 500px;
   width: 90%;
   max-height: 90vh;
-  overflow-y: visible;
+  overflow-y: auto;
   box-shadow: var(--shadow-heavy);
   position: relative;
   animation: slideDown 0.3s ease;
+  display: flex;
+  flex-direction: column;
 }
 
 @keyframes slideDown {
@@ -1329,12 +1354,56 @@ form[method="GET"] select:focus {
   }
 }
 
+.payment-modal-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.payment-modal-content::-webkit-scrollbar-track {
+  background: rgba(0, 64, 128, 0.1);
+  border-radius: 10px;
+}
+
+.payment-modal-content::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, var(--primary-blue), #0056b3);
+  border-radius: 10px;
+}
+
+.payment-modal-content::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #0056b3, var(--primary-blue));
+}
+
+#sizeOptions {
+  max-height: 400px;
+  overflow-y: auto;
+  padding-right: 5px;
+}
+
+#sizeOptions::-webkit-scrollbar {
+  width: 6px;
+}
+
+#sizeOptions::-webkit-scrollbar-track {
+  background: rgba(0, 64, 128, 0.05);
+  border-radius: 10px;
+}
+
+#sizeOptions::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, var(--primary-blue), #0056b3);
+  border-radius: 10px;
+}
+
+#sizeOptions::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #0056b3, var(--primary-blue));
+}
+
 .payment-modal-content h2 {
   color: var(--primary-blue);
   text-align: center;
   margin-bottom: 30px;
   font-size: 1.8rem;
   font-weight: 700;
+  background: transparent;
+  padding: 0;
 }
 
 .payment-close-btn {
@@ -1462,9 +1531,13 @@ form[method="GET"] select:focus {
 @media (max-width: 768px) {
   .payment-modal-content {
     padding: 30px 20px;
-    max-height: 85vh;
+    max-height: 90vh;
     overflow-y: auto;
     width: 95%;
+  }
+  
+  #sizeOptions {
+    max-height: 300px;
   }
   
   .payment-modal-content h2 {

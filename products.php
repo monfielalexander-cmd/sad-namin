@@ -30,22 +30,34 @@ if ($user_query && $user_query->num_rows > 0) {
 /* ---------------- ADD TO CART ---------------- */
 if (isset($_POST['add_to_cart'])) {
     $product_id = $_POST['product_id'];
-    $check = $conn->query("SELECT * FROM cart WHERE customer_id='$customer_id' AND product_id='$product_id'");
+    $variant_id = isset($_POST['variant_id']) ? intval($_POST['variant_id']) : null;
+    $size = isset($_POST['size']) ? $conn->real_escape_string($_POST['size']) : null;
+    
+    $check = $conn->query("SELECT * FROM cart WHERE customer_id='$customer_id' AND product_id='$product_id' AND variant_id " . ($variant_id ? "= $variant_id" : "IS NULL"));
     if ($check->num_rows > 0) {
-        $conn->query("UPDATE cart SET quantity = quantity + 1 WHERE customer_id='$customer_id' AND product_id='$product_id'");
+        $conn->query("UPDATE cart SET quantity = quantity + 1 WHERE customer_id='$customer_id' AND product_id='$product_id' AND variant_id " . ($variant_id ? "= $variant_id" : "IS NULL"));
     } else {
-        $conn->query("INSERT INTO cart (customer_id, product_id, quantity) VALUES ('$customer_id','$product_id','1')");
+        $variant_id_value = $variant_id ? $variant_id : 'NULL';
+        $size_value = $size ? "'$size'" : 'NULL';
+        $conn->query("INSERT INTO cart (customer_id, product_id, variant_id, size, quantity) VALUES ('$customer_id','$product_id',$variant_id_value,$size_value,'1')");
     }
 }
 
 /* ---------------- UPDATE CART ---------------- */
 if (isset($_POST['increase_qty']) || isset($_POST['decrease_qty'])) {
     $cart_id = intval($_POST['cart_id']);
-    $result = $conn->query("SELECT c.quantity, c.product_id, p.stock FROM cart c JOIN products_ko p ON c.product_id = p.id WHERE c.cart_id='$cart_id' AND c.customer_id='$customer_id'");
+    $result = $conn->query("
+        SELECT c.quantity, c.product_id, c.variant_id, 
+               COALESCE(v.stock, p.stock) as available_stock
+        FROM cart c 
+        JOIN products_ko p ON c.product_id = p.id 
+        LEFT JOIN product_variants v ON c.variant_id = v.id
+        WHERE c.cart_id='$cart_id' AND c.customer_id='$customer_id'
+    ");
     if ($result && $result->num_rows > 0) {
         $row = $result->fetch_assoc();
         $qty = $row['quantity'];
-        $stock = $row['stock'];
+        $stock = $row['available_stock'];
         if (isset($_POST['increase_qty'])) {
             if ($qty < $stock) {
                 $qty++;
@@ -79,9 +91,13 @@ if (isset($_POST['confirm_payment'])) {
     $gcash_reference = $_POST['gcash_reference'] ?? '';
 
     $cart_items = $conn->query("
-        SELECT c.product_id, c.quantity, p.price, p.stock, p.name
+        SELECT c.product_id, c.variant_id, c.size, c.quantity, 
+               COALESCE(p.price + v.price_modifier, p.price) as price,
+               COALESCE(v.stock, p.stock) as stock, 
+               p.name
         FROM cart c
         JOIN products_ko p ON c.product_id = p.id
+        LEFT JOIN product_variants v ON c.variant_id = v.id
         WHERE c.customer_id='$customer_id'
     ");
 
@@ -98,17 +114,34 @@ if (isset($_POST['confirm_payment'])) {
         $transaction_id = $conn->insert_id;
 
         $cart_items = $conn->query("
-            SELECT c.product_id, c.quantity, p.price, p.name
+            SELECT c.product_id, c.variant_id, c.size, c.quantity, 
+                   COALESCE(p.price + v.price_modifier, p.price) as price, 
+                   p.name
             FROM cart c
             JOIN products_ko p ON c.product_id = p.id
+            LEFT JOIN product_variants v ON c.variant_id = v.id
             WHERE c.customer_id='$customer_id'
         ");
 
         while ($i = $cart_items->fetch_assoc()) {
             $pid = $i['product_id'];
+            $variant_id = $i['variant_id'];
+            $product_name = $i['name'];
+            
+            // Add size to product name if variant exists
+            if ($i['size']) {
+                $product_name .= ' (' . $i['size'] . ')';
+            }
+            
             $conn->query("INSERT INTO transaction_items (transaction_id, product_id, product_name, quantity, price)
-                          VALUES ('$transaction_id', '$pid', '{$i['name']}', '{$i['quantity']}', '{$i['price']}')");
-            $conn->query("UPDATE products_ko SET stock = stock - {$i['quantity']} WHERE id='$pid'");
+                          VALUES ('$transaction_id', '$pid', '$product_name', '{$i['quantity']}', '{$i['price']}')");
+            
+            // Update stock - use variant stock if variant_id exists, otherwise use product stock
+            if ($variant_id) {
+                $conn->query("UPDATE product_variants SET stock = stock - {$i['quantity']} WHERE id='$variant_id'");
+            } else {
+                $conn->query("UPDATE products_ko SET stock = stock - {$i['quantity']} WHERE id='$pid'");
+            }
         }
 
         $conn->query("DELETE FROM cart WHERE customer_id='$customer_id'");
@@ -273,13 +306,35 @@ if (isset($_POST['confirm_payment'])) {
 
 $selected_category = isset($_GET['category']) ? $conn->real_escape_string($_GET['category']) : '';
 if (!empty($selected_category)) {
-    $products = $conn->query("SELECT * FROM products_ko WHERE archive = 0 AND category = '$selected_category' ORDER BY id DESC");
+    $products = $conn->query("
+        SELECT p.*, 
+        (SELECT COUNT(*) FROM product_variants WHERE product_id = p.id) as variant_count,
+        (SELECT SUM(stock) FROM product_variants WHERE product_id = p.id) as total_variant_stock
+        FROM products_ko p
+        WHERE p.archive = 0 AND p.category = '$selected_category' 
+        ORDER BY p.id DESC
+    ");
 } else {
-    $products = $conn->query("SELECT * FROM products_ko WHERE archive = 0 ORDER BY id DESC");
+    $products = $conn->query("
+        SELECT p.*, 
+        (SELECT COUNT(*) FROM product_variants WHERE product_id = p.id) as variant_count,
+        (SELECT SUM(stock) FROM product_variants WHERE product_id = p.id) as total_variant_stock
+        FROM products_ko p
+        WHERE p.archive = 0 
+        ORDER BY p.id DESC
+    ");
 }
 $categories = $conn->query("SELECT DISTINCT category FROM products_ko WHERE category IS NOT NULL AND category != ''");
 
-$cart = $conn->query("SELECT c.cart_id, c.product_id, p.name, p.price, p.category, p.stock, c.quantity FROM cart c JOIN products_ko p ON c.product_id = p.id WHERE c.customer_id='$customer_id'");
+$cart = $conn->query("
+    SELECT c.cart_id, c.product_id, c.variant_id, c.size, p.name, p.price, p.category, p.stock, c.quantity,
+           COALESCE(v.stock, p.stock) as available_stock,
+           COALESCE(p.price + v.price_modifier, p.price) as final_price
+    FROM cart c 
+    JOIN products_ko p ON c.product_id = p.id 
+    LEFT JOIN product_variants v ON c.variant_id = v.id
+    WHERE c.customer_id='$customer_id'
+");
 $transactions_result = $conn->query("
     SELECT t.transaction_id, t.transaction_date, t.total_amount, ti.product_name, ti.quantity, ti.price
     FROM transactions t
@@ -359,6 +414,11 @@ if ($transactions_result) {
     <div class="product-grid">
       <?php if ($products && $products->num_rows > 0): ?>
         <?php while ($p = $products->fetch_assoc()): ?>
+          <?php 
+          // Check if product has variants
+          $has_variants = isset($p['variant_count']) && $p['variant_count'] > 0;
+          $available_stock = $has_variants ? ($p['total_variant_stock'] ?? 0) : $p['stock'];
+          ?>
           <div class="product-card">
             <?php if (!empty($p['image'])): ?>
               <img src="<?= htmlspecialchars($p['image']) ?>" alt="<?= htmlspecialchars($p['name']) ?>">
@@ -367,16 +427,18 @@ if ($transactions_result) {
             <?php endif; ?>
             <div class="product-footer">
               <h4><?= htmlspecialchars($p['name']) ?></h4>
-              <?= htmlspecialchars($p['category']) ?>
-              <p><strong>₱<?= number_format($p['price'], 2) ?></strong></p>
-              <form method="POST">
-                <input type="hidden" name="product_id" value="<?= $p['id'] ?>">
-                <?php if ($p['stock'] > 0): ?>
-                  <button type="submit" class="add-cart-btn" name="add_to_cart" style="font-size: 0.8rem; padding: 8px 14px;">Add</button>
+              <?php if ($available_stock > 0): ?>
+                <?php if ($has_variants): ?>
+                  <button type="button" class="add-cart-btn" onclick="openSizeModal(<?= $p['id'] ?>, '<?= htmlspecialchars($p['name'], ENT_QUOTES) ?>', <?= $p['price'] ?>)" style="font-size: 0.8rem; padding: 8px 14px;">Add</button>
                 <?php else: ?>
-                  <button type="button" class="add-cart-btn" disabled style="background-color: #999; cursor: not-allowed; font-size: 0.75rem; padding: 8px 12px;">Out of Stock</button>
+                  <form method="POST">
+                    <input type="hidden" name="product_id" value="<?= $p['id'] ?>">
+                    <button type="submit" class="add-cart-btn" name="add_to_cart" style="font-size: 0.8rem; padding: 8px 14px;">Add</button>
+                  </form>
                 <?php endif; ?>
-              </form>
+              <?php else: ?>
+                <button type="button" class="add-cart-btn" disabled style="background-color: #999; cursor: not-allowed; font-size: 0.75rem; padding: 8px 12px;">Out of Stock</button>
+              <?php endif; ?>
             </div>
           </div>
         <?php endwhile; ?>
@@ -394,16 +456,18 @@ if ($transactions_result) {
           <?php 
           $total = 0;
           while ($item = $cart->fetch_assoc()): 
-              $subtotal = $item['price'] * $item['quantity'];
+              $subtotal = $item['final_price'] * $item['quantity'];
               $total += $subtotal;
           ?>
             <div class="cart-row">
               <div class="cart-item-info">
-                <div class="cart-item-name"><?= htmlspecialchars($item['name']) ?></div>
-                <?php if (!empty($item['category'])): ?>
-                  <div class="cart-item-category"><?= htmlspecialchars($item['category']) ?></div>
-                <?php endif; ?>
-                <div class="cart-item-price">₱<?= number_format($item['price'], 2) ?></div>
+                <div class="cart-item-name">
+                  <?= htmlspecialchars($item['name']) ?>
+                  <?php if ($item['size']): ?>
+                    <span style="color: #0066cc; font-weight: 600; font-size: 0.9rem;"> (<?= htmlspecialchars($item['size']) ?>)</span>
+                  <?php endif; ?>
+                </div>
+                <div class="cart-item-price">₱<?= number_format($item['final_price'], 2) ?></div>
               </div>
               <div class="cart-controls">
                 <form method="POST" style="display:inline;">
@@ -413,7 +477,7 @@ if ($transactions_result) {
                 <span class="qty-display"><?= $item['quantity'] ?></span>
                 <form method="POST" style="display:inline;">
                   <input type="hidden" name="cart_id" value="<?= $item['cart_id'] ?>">
-                  <button class="qty-btn" name="increase_qty" <?= ($item['quantity'] >= $item['stock']) ? 'disabled style="opacity: 0.5; cursor: not-allowed;"' : '' ?>>+</button>
+                  <button class="qty-btn" name="increase_qty" <?= ($item['quantity'] >= $item['available_stock']) ? 'disabled style="opacity: 0.5; cursor: not-allowed;"' : '' ?>>+</button>
                 </form>
               </div>
             </div>
@@ -509,6 +573,32 @@ if ($transactions_result) {
     </div>
   </div>
 </div>
+
+<!-- Size Selection Modal -->
+<div id="sizeModal" class="payment-modal" style="display: none;">
+  <div class="payment-modal-content" style="max-width: 500px;">
+    <button class="payment-close-btn" onclick="closeSizeModal()">×</button>
+    <h2 id="sizeModalTitle">Select Size</h2>
+    
+    <div style="padding: 20px;">
+      <p style="text-align: center; color: #666; margin-bottom: 20px;">
+        Choose available size for <strong id="productName"></strong>
+      </p>
+      
+      <div id="sizeOptions" style="display: flex; flex-direction: column; gap: 12px;">
+        <!-- Size options will be loaded here via JavaScript -->
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Hidden form for adding variant to cart -->
+<form method="POST" id="addVariantForm" style="display: none;">
+  <input type="hidden" name="add_to_cart" value="1">
+  <input type="hidden" name="product_id" id="hidden_product_id">
+  <input type="hidden" name="variant_id" id="hidden_variant_id">
+  <input type="hidden" name="size" id="hidden_size">
+</form>
 
 <!-- Hidden form for payment confirmation -->
 <form method="POST" id="paymentConfirmForm" style="display: none;">
@@ -658,12 +748,101 @@ function backToPaymentOptions() {
 window.onclick = function(event) {
   const paymentModal = document.getElementById('paymentModal');
   const gcashModal = document.getElementById('gcashModal');
+  const sizeModal = document.getElementById('sizeModal');
   if (event.target === paymentModal) {
     closePaymentModal();
   }
   if (event.target === gcashModal) {
     closeGcashModal();
   }
+  if (event.target === sizeModal) {
+    closeSizeModal();
+  }
+}
+
+// Size Selection Modal Functions
+function openSizeModal(productId, productName, basePrice) {
+  document.getElementById('productName').textContent = productName;
+  
+  // Fetch variants via AJAX
+  fetch(`get_variants.php?product_id=${productId}`)
+    .then(response => response.json())
+    .then(variants => {
+      const sizeOptions = document.getElementById('sizeOptions');
+      sizeOptions.innerHTML = '';
+      
+      if (variants.length === 0) {
+        sizeOptions.innerHTML = '<p style="text-align: center; color: #999;">No sizes available</p>';
+        return;
+      }
+      
+      variants.forEach(variant => {
+        const finalPrice = parseFloat(basePrice) + parseFloat(variant.price_modifier);
+        const isOutOfStock = variant.stock <= 0;
+        
+        const sizeOption = document.createElement('div');
+        sizeOption.className = 'size-option';
+        sizeOption.style.cssText = `
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 15px 20px;
+          border: 2px solid ${isOutOfStock ? '#ddd' : '#004080'};
+          border-radius: 12px;
+          cursor: ${isOutOfStock ? 'not-allowed' : 'pointer'};
+          transition: all 0.3s ease;
+          background: ${isOutOfStock ? '#f5f5f5' : 'white'};
+          opacity: ${isOutOfStock ? '0.6' : '1'};
+        `;
+        
+        if (!isOutOfStock) {
+          sizeOption.onmouseover = function() {
+            this.style.background = '#e6f2ff';
+            this.style.transform = 'translateX(5px)';
+          };
+          sizeOption.onmouseout = function() {
+            this.style.background = 'white';
+            this.style.transform = 'translateX(0)';
+          };
+          sizeOption.onclick = function() {
+            selectSize(productId, variant.id, variant.size);
+          };
+        }
+        
+        sizeOption.innerHTML = `
+          <div>
+            <div style="font-weight: 600; font-size: 16px; color: #004080;">${variant.size}</div>
+            <div style="font-size: 12px; color: ${isOutOfStock ? '#999' : '#666'}; margin-top: 4px;">
+              ${isOutOfStock ? 'Out of Stock' : `${variant.stock} available`}
+            </div>
+          </div>
+          <div style="text-align: right;">
+            <div style="font-weight: 700; font-size: 18px; color: ${isOutOfStock ? '#999' : '#27ae60'};">
+              ₱${finalPrice.toFixed(2)}
+            </div>
+          </div>
+        `;
+        
+        sizeOptions.appendChild(sizeOption);
+      });
+      
+      document.getElementById('sizeModal').style.display = 'flex';
+    })
+    .catch(error => {
+      console.error('Error fetching variants:', error);
+      alert('Failed to load product sizes. Please try again.');
+    });
+}
+
+function closeSizeModal() {
+  document.getElementById('sizeModal').style.display = 'none';
+}
+
+function selectSize(productId, variantId, size) {
+  document.getElementById('hidden_product_id').value = productId;
+  document.getElementById('hidden_variant_id').value = variantId;
+  document.getElementById('hidden_size').value = size;
+  document.getElementById('addVariantForm').submit();
 }
 </script>
 
