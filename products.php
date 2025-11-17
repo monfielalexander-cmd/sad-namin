@@ -611,23 +611,52 @@ if ($transactions_result) {
 </form>
 
 <div id="historyPanel" class="history-container">
-  <button class="close-btn" onclick="toggleHistory()">×</button>
-  <h3>Purchase History</h3>
+  <button class="close-btn" onclick="toggleHistory()">&times;</button>
+  <h3>📋 Purchase History</h3>
   <?php if (!empty($transactions)): ?>
     <?php foreach ($transactions as $id => $t): ?>
       <div class="history-item">
-        <p><strong>Date:</strong> <?= htmlspecialchars($t['date']) ?></p>
-        <ul>
+        <div class="history-header">
+          <div class="transaction-id">
+            <span class="id-label">Order #<?= $id ?></span>
+          </div>
+          <div class="transaction-date">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+              <line x1="16" y1="2" x2="16" y2="6"></line>
+              <line x1="8" y1="2" x2="8" y2="6"></line>
+              <line x1="3" y1="10" x2="21" y2="10"></line>
+            </svg>
+            <?= date('M d, Y - g:i A', strtotime($t['date'])) ?>
+          </div>
+        </div>
+        
+        <div class="items-list">
           <?php foreach ($t['items'] as $item): ?>
-            <li><?= htmlspecialchars($item['name']) ?> (x<?= $item['quantity'] ?>) - ₱<?= number_format($item['price'], 2) ?></li>
+            <div class="item-row">
+              <div class="item-details">
+                <span class="item-name"><?= htmlspecialchars($item['name']) ?></span>
+                <span class="item-meta">₱<?= number_format($item['price'], 2) ?> × <?= $item['quantity'] ?></span>
+              </div>
+              <div class="item-total">
+                ₱<?= number_format($item['price'] * $item['quantity'], 2) ?>
+              </div>
+            </div>
           <?php endforeach; ?>
-        </ul>
-        <p><strong>Total:</strong> ₱<?= number_format($t['total'], 2) ?></p>
-        <hr>
+        </div>
+        
+        <div class="history-footer">
+          <span class="total-label">Total Amount</span>
+          <span class="total-amount">₱<?= number_format($t['total'], 2) ?></span>
+        </div>
       </div>
     <?php endforeach; ?>
   <?php else: ?>
-    <p>No transaction history yet.</p>
+    <div class="empty-history">
+      <div class="empty-icon">📭</div>
+      <p class="empty-text">No transaction history yet</p>
+      <p class="empty-subtext">Your purchase history will appear here</p>
+    </div>
   <?php endif; ?>
 </div>
 

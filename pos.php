@@ -13,9 +13,23 @@ if ($conn->connect_error) {
 
 $selected_category = isset($_GET['category']) ? $conn->real_escape_string($_GET['category']) : '';
 if (!empty($selected_category)) {
-    $products = $conn->query("SELECT * FROM products_ko WHERE archive = 0 AND category = '$selected_category' ORDER BY id DESC");
+    $products = $conn->query("
+        SELECT p.*, 
+        (SELECT COUNT(*) FROM product_variants WHERE product_id = p.id) as variant_count,
+        (SELECT SUM(stock) FROM product_variants WHERE product_id = p.id) as total_variant_stock
+        FROM products_ko p
+        WHERE p.archive = 0 AND p.category = '$selected_category' 
+        ORDER BY p.id DESC
+    ");
 } else {
-    $products = $conn->query("SELECT * FROM products_ko WHERE archive = 0 ORDER BY id DESC");
+    $products = $conn->query("
+        SELECT p.*, 
+        (SELECT COUNT(*) FROM product_variants WHERE product_id = p.id) as variant_count,
+        (SELECT SUM(stock) FROM product_variants WHERE product_id = p.id) as total_variant_stock
+        FROM products_ko p
+        WHERE p.archive = 0 
+        ORDER BY p.id DESC
+    ");
 }
 $categories = $conn->query("SELECT DISTINCT category FROM products_ko WHERE category IS NOT NULL AND category != ''");
 ?>
@@ -58,13 +72,18 @@ $categories = $conn->query("SELECT DISTINCT category FROM products_ko WHERE cate
 <div class="product-grid">
   <?php if ($products && $products->num_rows > 0): ?>
     <?php while ($p = $products->fetch_assoc()): ?>
-      <!-- ✅ Added data attributes -->
+      <?php 
+      // Check if product has variants
+      $has_variants = isset($p['variant_count']) && $p['variant_count'] > 0;
+      $available_stock = $has_variants ? ($p['total_variant_stock'] ?? 0) : $p['stock'];
+      ?>
       <div class="product-card"
            data-id="<?= $p['id'] ?>"
            data-name="<?= htmlspecialchars($p['name']) ?>"
            data-category="<?= htmlspecialchars($p['category']) ?>"
            data-price="<?= $p['price'] ?>"
-           data-stock="<?= $p['stock'] ?>">
+           data-stock="<?= $available_stock ?>"
+           data-has-variants="<?= $has_variants ? '1' : '0' ?>">
         <?php if (!empty($p['image'])): ?>
           <img src="<?= htmlspecialchars($p['image']) ?>" alt="<?= htmlspecialchars($p['name']) ?>">
         <?php else: ?>
@@ -73,10 +92,9 @@ $categories = $conn->query("SELECT DISTINCT category FROM products_ko WHERE cate
 
         <div class="product-footer">
           <h4><?= htmlspecialchars($p['name']) ?></h4>
-          <?= htmlspecialchars($p['category']) ?>
-          <p><strong>₱<?= number_format($p['price'], 2) ?></strong></p>
+          <p class="stock-info"><?= $available_stock ?> available</p>
 
-          <?php if ($p['stock'] > 0): ?>
+          <?php if ($available_stock > 0): ?>
             <button type="button" class="add-cart-btn">Add</button>
           <?php else: ?>
             <button type="button" class="add-cart-btn" disabled style="background-color: #999; cursor: not-allowed;">Out of Stock</button>
@@ -161,6 +179,24 @@ $categories = $conn->query("SELECT DISTINCT category FROM products_ko WHERE cate
 <button type="button" class="checkout-btn" onclick="initiateCheckout()">Checkout</button>
 </div>
 
+<!-- Size Selection Modal -->
+<div id="sizeModal" class="payment-modal" style="display: none;">
+  <div class="payment-modal-content" style="max-width: 500px;">
+    <button class="payment-close-btn" onclick="closeSizeModal()">×</button>
+    <h2 id="sizeModalTitle">Select Size</h2>
+    
+    <div style="padding: 20px;">
+      <p style="text-align: center; color: #666; margin-bottom: 20px;">
+        Choose available size for <strong id="productName"></strong>
+      </p>
+      
+      <div id="sizeOptions" style="display: flex; flex-direction: column; gap: 12px;">
+        <!-- Size options will be loaded here via JavaScript -->
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- Receipt Modal -->
 <div class="receipt-container" id="receiptContainer">
   <div class="receipt-modal">
@@ -221,9 +257,17 @@ document.querySelectorAll('.add-cart-btn').forEach(btn => {
     const category = card.dataset.category;
     const price = parseFloat(card.dataset.price);
     const stock = parseInt(card.dataset.stock);
+    const hasVariants = card.dataset.hasVariants === '1';
 
+    // If product has variants, show size selection modal
+    if (hasVariants) {
+      openSizeModal(id, name, price);
+      return;
+    }
+
+    // Direct add for products without variants
     if (!cart[id]) {
-      cart[id] = { name, category, price, stock, qty: 1 };
+      cart[id] = { name, category, price, stock, qty: 1, size: null };
     } else {
       if (cart[id].qty < stock) {
         cart[id].qty++;
@@ -236,6 +280,123 @@ document.querySelectorAll('.add-cart-btn').forEach(btn => {
     updateCartDisplay();
   });
 });
+
+// Size Selection Modal Functions
+function openSizeModal(productId, productName, basePrice) {
+  document.getElementById('productName').textContent = productName;
+  
+  // Fetch variants via AJAX
+  fetch(`get_variants.php?product_id=${productId}`)
+    .then(response => response.json())
+    .then(variants => {
+      const sizeOptions = document.getElementById('sizeOptions');
+      sizeOptions.innerHTML = '';
+      
+      if (variants.length === 0) {
+        sizeOptions.innerHTML = '<p style="text-align: center; color: #999;">No sizes available</p>';
+        return;
+      }
+      
+      variants.forEach(variant => {
+        const finalPrice = parseFloat(basePrice) + parseFloat(variant.price_modifier);
+        const isOutOfStock = variant.stock <= 0;
+        
+        const sizeOption = document.createElement('div');
+        sizeOption.className = 'size-option';
+        sizeOption.style.cssText = `
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 15px 20px;
+          border: 2px solid ${isOutOfStock ? '#ddd' : '#004080'};
+          border-radius: 12px;
+          cursor: ${isOutOfStock ? 'not-allowed' : 'pointer'};
+          transition: all 0.3s ease;
+          background: ${isOutOfStock ? '#f5f5f5' : 'white'};
+          opacity: ${isOutOfStock ? '0.6' : '1'};
+        `;
+        
+        if (!isOutOfStock) {
+          sizeOption.onmouseover = function() {
+            this.style.background = '#e6f2ff';
+            this.style.transform = 'translateX(5px)';
+          };
+          sizeOption.onmouseout = function() {
+            this.style.background = 'white';
+            this.style.transform = 'translateX(0)';
+          };
+          sizeOption.onclick = function() {
+            selectSize(productId, variant.id, variant.size, productName, finalPrice, variant.stock);
+          };
+        }
+        
+        sizeOption.innerHTML = `
+          <div>
+            <div style="font-weight: 600; font-size: 16px; color: #004080;">${variant.size}</div>
+            <div style="font-size: 12px; color: ${isOutOfStock ? '#999' : '#666'}; margin-top: 4px;">
+              ${isOutOfStock ? 'Out of stock' : variant.stock + ' available'}
+            </div>
+          </div>
+          <div style="text-align: right;">
+            <div style="font-weight: 700; font-size: 18px; color: #27ae60;">₱${finalPrice.toFixed(2)}</div>
+          </div>
+        `;
+        
+        sizeOptions.appendChild(sizeOption);
+      });
+      
+      document.getElementById('sizeModal').style.display = 'flex';
+    })
+    .catch(error => {
+      console.error('Error fetching variants:', error);
+      alert('Failed to load product sizes. Please try again.');
+    });
+}
+
+function closeSizeModal() {
+  document.getElementById('sizeModal').style.display = 'none';
+}
+
+function selectSize(productId, variantId, size, name, price, stock) {
+  // Create unique cart ID with variant
+  const cartId = `${productId}_${variantId}`;
+  
+  // Get category from product card
+  const card = document.querySelector(`[data-id="${productId}"]`);
+  const category = card ? card.dataset.category : '';
+  
+  if (!cart[cartId]) {
+    cart[cartId] = { 
+      name: `${name} (${size})`, 
+      category, 
+      price, 
+      stock, 
+      qty: 1,
+      size,
+      productId,
+      variantId
+    };
+  } else {
+    if (cart[cartId].qty < stock) {
+      cart[cartId].qty++;
+    } else {
+      alert(`Cannot add more items. Only ${stock} in stock.`);
+      closeSizeModal();
+      return;
+    }
+  }
+  
+  updateCartDisplay();
+  closeSizeModal();
+}
+
+// Close modal when clicking outside
+window.onclick = function(event) {
+  const sizeModal = document.getElementById('sizeModal');
+  if (event.target === sizeModal) {
+    closeSizeModal();
+  }
+}
 
 let currentTotal = 0;
 

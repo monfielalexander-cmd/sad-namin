@@ -144,8 +144,29 @@ nav .logo {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
   gap: 25px;
-  padding: 30px 0;
-  margin: 15px;
+  padding: 30px;
+  margin-right: 420px;
+  max-height: calc(100vh - 180px);
+  overflow-y: auto;
+}
+
+/* Scrollbar styling for product grid */
+.product-grid::-webkit-scrollbar {
+  width: 8px;
+}
+
+.product-grid::-webkit-scrollbar-track {
+  background: rgba(0, 64, 128, 0.1);
+  border-radius: 10px;
+}
+
+.product-grid::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, var(--primary-blue), #0056b3);
+  border-radius: 10px;
+}
+
+.product-grid::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #0056b3, var(--primary-blue));
 }
 
 /* ==============================
@@ -858,6 +879,131 @@ form[method="GET"] select:focus {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
+/* ==============================
+   SIZE SELECTION MODAL
+============================== */
+.payment-modal {
+  display: none;
+  position: fixed;
+  z-index: 10002;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(5px);
+  align-items: center;
+  justify-content: center;
+}
+
+.payment-modal-content {
+  background: linear-gradient(145deg, #ffffff 0%, #f8faff 100%);
+  border-radius: var(--border-radius);
+  padding: 40px;
+  max-width: 500px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: var(--shadow-heavy);
+  position: relative;
+  animation: slideDown 0.3s ease;
+  display: flex;
+  flex-direction: column;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.payment-modal-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.payment-modal-content::-webkit-scrollbar-track {
+  background: rgba(0, 64, 128, 0.1);
+  border-radius: 10px;
+}
+
+.payment-modal-content::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, var(--primary-blue), #0056b3);
+  border-radius: 10px;
+}
+
+.payment-modal-content::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #0056b3, var(--primary-blue));
+}
+
+#sizeOptions {
+  max-height: 400px;
+  overflow-y: auto;
+  padding-right: 5px;
+}
+
+#sizeOptions::-webkit-scrollbar {
+  width: 6px;
+}
+
+#sizeOptions::-webkit-scrollbar-track {
+  background: rgba(0, 64, 128, 0.05);
+  border-radius: 10px;
+}
+
+#sizeOptions::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, var(--primary-blue), #0056b3);
+  border-radius: 10px;
+}
+
+#sizeOptions::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #0056b3, var(--primary-blue));
+}
+
+.payment-modal-content h2 {
+  color: var(--primary-blue);
+  text-align: center;
+  margin-bottom: 30px;
+  font-size: 1.8rem;
+  font-weight: 700;
+  background: transparent;
+  padding: 0;
+}
+
+.payment-close-btn {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  background: linear-gradient(45deg, var(--danger-red), #c0392b);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 35px;
+  height: 35px;
+  font-size: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition);
+  box-shadow: 0 2px 8px rgba(231, 76, 60, 0.3);
+}
+
+.payment-close-btn:hover {
+  transform: rotate(90deg) scale(1.1);
+  box-shadow: 0 4px 12px rgba(231, 76, 60, 0.5);
+}
+
+.stock-info {
+  color: #666;
+  font-size: 0.85rem;
+  margin: 5px 0;
+}
+
 @media print {
   body * {
     visibility: hidden;
@@ -904,6 +1050,8 @@ form[method="GET"] select:focus {
   .product-grid {
     grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
     gap: 20px;
+    margin-right: 0;
+    max-height: none;
   }
 }
 
@@ -947,8 +1095,10 @@ form[method="GET"] select:focus {
   .product-grid {
     grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
     gap: 15px;
-    padding: 20px 0;
-    margin: 0 5px;
+    padding: 20px 5px;
+    margin: 0;
+    max-height: calc(100vh - 250px);
+    overflow-y: auto;
   }
   
   .product-card {
@@ -1023,6 +1173,21 @@ form[method="GET"] select:focus {
 
   .cart-container.active {
     transform: translateX(0);
+  }
+  
+  .payment-modal-content {
+    padding: 30px 20px;
+    max-height: 90vh;
+    width: 95%;
+  }
+  
+  #sizeOptions {
+    max-height: 300px;
+  }
+  
+  .payment-modal-content h2 {
+    font-size: 1.4rem;
+    margin-bottom: 20px;
   }
 }
 

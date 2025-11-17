@@ -821,44 +821,164 @@ form[method="GET"] select:focus {
   position: fixed;
   top: 0;
   right: -100%;
-  width: 400px;
+  width: 450px;
   height: 100vh;
   background: linear-gradient(145deg, #ffffff 0%, #f8faff 100%);
-  box-shadow: var(--shadow-heavy);
-  padding: 25px;
+  box-shadow: -8px 0 40px rgba(0, 64, 128, 0.2);
+  padding: 30px 20px;
   overflow-y: auto;
   transition: right 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
   z-index: 10000;
-  border-left: 2px solid rgba(0, 64, 128, 0.1);
+  border-left: 3px solid var(--accent-gold);
 }
 
 .history-container h3 {
   color: var(--primary-blue);
-  font-size: 1.5rem;
-  margin-bottom: 20px;
+  font-size: 1.6rem;
+  margin-bottom: 25px;
   padding-bottom: 15px;
   border-bottom: 3px solid var(--accent-gold);
-  background: linear-gradient(45deg, var(--primary-blue), var(--secondary-blue));
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
   font-weight: 700;
   text-align: center;
+  text-shadow: 1px 1px 2px rgba(0, 64, 128, 0.1);
 }
 
 .history-item {
-  background: linear-gradient(145deg, #ffffff 0%, #f8faff 100%);
-  border-radius: var(--border-radius);
-  padding: 15px;
-  margin-bottom: 15px;
-  border: 1px solid rgba(0, 64, 128, 0.1);
+  background: white;
+  border-radius: 16px;
+  padding: 0;
+  margin-bottom: 20px;
+  border: 2px solid rgba(0, 64, 128, 0.1);
   transition: var(--transition);
-  box-shadow: var(--shadow-light);
+  box-shadow: 0 4px 15px rgba(0, 64, 128, 0.08);
+  overflow: hidden;
 }
 
 .history-item:hover {
-  box-shadow: var(--shadow-medium);
-  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 64, 128, 0.15);
+  transform: translateY(-3px);
+  border-color: var(--secondary-blue);
+}
+
+.history-header {
+  background: linear-gradient(135deg, var(--primary-blue) 0%, #0056b3 100%);
+  padding: 15px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.transaction-id {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.id-label {
+  background: rgba(255, 204, 0, 0.2);
+  color: white;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  border: 1px solid rgba(255, 204, 0, 0.3);
+}
+
+.transaction-date {
+  color: rgba(255, 255, 255, 0.95);
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.transaction-date svg {
+  opacity: 0.9;
+}
+
+.items-list {
+  padding: 20px;
+  background: linear-gradient(to bottom, #fafbff 0%, white 100%);
+}
+
+.item-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(0, 64, 128, 0.08);
+}
+
+.item-row:last-child {
+  border-bottom: none;
+}
+
+.item-details {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.item-name {
+  color: var(--text-dark);
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.item-meta {
+  color: #666;
+  font-size: 0.8rem;
+}
+
+.item-total {
+  color: var(--primary-blue);
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+.history-footer {
+  background: linear-gradient(135deg, #f8faff 0%, #e8f2ff 100%);
+  padding: 18px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-top: 2px dashed rgba(0, 64, 128, 0.15);
+}
+
+.total-label {
+  color: var(--text-dark);
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.total-amount {
+  color: var(--success-green);
+  font-weight: 700;
+  font-size: 1.3rem;
+}
+
+.empty-history {
+  text-align: center;
+  padding: 80px 40px;
+}
+
+.empty-icon {
+  font-size: 4rem;
+  margin-bottom: 20px;
+  opacity: 0.6;
+}
+
+.empty-text {
+  color: var(--text-dark);
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.empty-subtext {
+  color: #999;
+  font-size: 0.9rem;
 }
 
 .history-item p {
@@ -926,12 +1046,15 @@ form[method="GET"] select:focus {
   width: 8px;
 }
 .history-container::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 4px;
+  background: rgba(0, 64, 128, 0.05);
+  border-radius: 10px;
 }
 .history-container::-webkit-scrollbar-thumb {
-  background: #004080;
-  border-radius: 4px;
+  background: linear-gradient(135deg, var(--primary-blue), #0056b3);
+  border-radius: 10px;
+}
+.history-container::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #0056b3, var(--primary-blue));
 }
 
 .history-panel {
@@ -1271,27 +1394,68 @@ form[method="GET"] select:focus {
   
   .history-container {
     width: 100vw;
-    padding: 15px;
-    padding-top: 70px;
+    padding: 20px 15px;
+    padding-top: 80px;
   }
   
   .history-container h3 {
-    font-size: 1.2rem;
-    margin-bottom: 15px;
+    font-size: 1.3rem;
+    margin-bottom: 20px;
   }
   
   .history-item {
-    margin-bottom: 12px;
-    padding: 12px;
+    margin-bottom: 15px;
   }
   
-  .history-item p {
+  .history-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 12px 15px;
+  }
+  
+  .transaction-date {
+    font-size: 0.8rem;
+  }
+  
+  .items-list {
+    padding: 15px;
+  }
+  
+  .item-row {
+    padding: 10px 0;
+  }
+  
+  .item-name {
     font-size: 0.9rem;
   }
   
-  .history-item li {
-    font-size: 0.85rem;
-    padding: 6px;
+  .item-meta {
+    font-size: 0.75rem;
+  }
+  
+  .item-total {
+    font-size: 0.95rem;
+  }
+  
+  .history-footer {
+    padding: 15px;
+  }
+  
+  .total-label {
+    font-size: 0.95rem;
+  }
+  
+  .total-amount {
+    font-size: 1.2rem;
+  }
+  
+  .empty-history {
+    padding: 60px 20px;
+  }
+  
+  .empty-icon {
+    font-size: 3rem;
   }
   
   .close-btn {
