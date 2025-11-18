@@ -45,26 +45,44 @@
 <div class="carousel-container">
   <div class="carousel">
     <div class="carousel-item prev">
-      <img src="images/block.jpg" alt="Hollow Blocks">
+      <img src="images/plyboard.jpg" alt="Plyboard">
       <div class="info">
-        <h3>Hollow Blocks</h3>
-        <p>₱20 / piece</p>
+        <h3>Plyboard</h3>
       </div>
     </div>
 
     <div class="carousel-item active">
-      <img src="images/cement.jpg" alt="Cement">
+      <img src="images/yero (b).jpg" alt="Yero (B)">
       <div class="info">
-        <h3>Cement</h3>
-        <p>₱300 / bag</p>
+        <h3>Yero (B)</h3>
       </div>
     </div>
 
     <div class="carousel-item next">
-      <img src="images/gravel.jpg" alt="Gravel">
+      <img src="images/marine.avif" alt="Marine">
       <div class="info">
-        <h3>Gravel</h3>
-        <p>₱58 / bag</p>
+        <h3>Marine Plywood</h3>
+      </div>
+    </div>
+
+    <div class="carousel-item">
+      <img src="images/plainsheetGI.jpg" alt="Plain Sheet G.I">
+      <div class="info">
+        <h3>Plain Sheet G.I</h3>
+      </div>
+    </div>
+
+    <div class="carousel-item">
+      <img src="images/yero.jpg" alt="Yero">
+      <div class="info">
+        <h3>Yero</h3>
+      </div>
+    </div>
+
+    <div class="carousel-item">
+      <img src="images/plainround.webp" alt="Plain">
+      <div class="info">
+        <h3>Plain Round Bar</h3>
       </div>
     </div>
   </div>
@@ -262,13 +280,19 @@
 
   function updateCarousel() {
     items.forEach((item, index) => {
-      item.classList.remove('prev', 'next', 'active');
+      item.classList.remove('prev-2', 'prev', 'next', 'next-2', 'active');
+      
+      const total = items.length;
       if (index === current) {
         item.classList.add('active');
-      } else if (index === (current - 1 + items.length) % items.length) {
+      } else if (index === (current - 1 + total) % total) {
         item.classList.add('prev');
-      } else if (index === (current + 1) % items.length) {
+      } else if (index === (current + 1) % total) {
         item.classList.add('next');
+      } else if (index === (current - 2 + total) % total) {
+        item.classList.add('prev-2');
+      } else if (index === (current + 2) % total) {
+        item.classList.add('next-2');
       }
     });
   }

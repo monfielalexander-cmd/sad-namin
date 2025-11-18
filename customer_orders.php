@@ -529,7 +529,7 @@ while ($row = mysqli_fetch_assoc($monthly_sales_result)) {
       pdf.text(`Generated on: ${currentDate}`, 105, 40, { align: 'center' });
       
       // Draw line separator
-      pdf.setDrawColor(0, 64, 128);
+      pdf.setDrawColor(0, 0, 0);
       pdf.setLineWidth(0.5);
       pdf.line(20, 45, 190, 45);
       
@@ -543,7 +543,7 @@ while ($row = mysqli_fetch_assoc($monthly_sales_result)) {
       let xPosition = 20;
       
       // Draw header background
-      pdf.setFillColor(0, 64, 128);
+      pdf.setFillColor(0, 0, 0);
       pdf.rect(20, yPosition - 5, 165, 8, 'F');
       
       pdf.setTextColor(255, 255, 255);
@@ -591,7 +591,7 @@ while ($row = mysqli_fetch_assoc($monthly_sales_result)) {
         // Month Header
         pdf.setFontSize(14);
         pdf.setFont(undefined, 'bold');
-        pdf.setFillColor(0, 64, 128);
+        pdf.setFillColor(0, 0, 0);
         pdf.setTextColor(255, 255, 255);
         pdf.rect(20, yPosition - 3, 165, 12, 'F');
         pdf.text(monthYear, 105, yPosition + 5, { align: 'center' });
@@ -603,7 +603,7 @@ while ($row = mysqli_fetch_assoc($monthly_sales_result)) {
         // Draw table headers for this month
         pdf.setFontSize(9);
         pdf.setFont(undefined, 'bold');
-        pdf.setFillColor(220, 220, 220);
+        pdf.setFillColor(240, 240, 240);
         pdf.rect(20, yPosition - 5, 165, 8, 'F');
         pdf.setTextColor(0, 0, 0);
         
@@ -625,7 +625,7 @@ while ($row = mysqli_fetch_assoc($monthly_sales_result)) {
             // Redraw month header on new page
             pdf.setFontSize(14);
             pdf.setFont(undefined, 'bold');
-            pdf.setFillColor(0, 64, 128);
+            pdf.setFillColor(0, 0, 0);
             pdf.setTextColor(255, 255, 255);
             pdf.rect(20, yPosition - 3, 165, 12, 'F');
             pdf.text(`${monthYear} (continued)`, 105, yPosition + 5, { align: 'center' });
@@ -634,7 +634,7 @@ while ($row = mysqli_fetch_assoc($monthly_sales_result)) {
             // Redraw headers
             pdf.setFontSize(9);
             pdf.setFont(undefined, 'bold');
-            pdf.setFillColor(220, 220, 220);
+            pdf.setFillColor(240, 240, 240);
             pdf.rect(20, yPosition - 5, 165, 8, 'F');
             pdf.setTextColor(0, 0, 0);
             
@@ -652,7 +652,7 @@ while ($row = mysqli_fetch_assoc($monthly_sales_result)) {
           
           // Alternate row colors
           if (transactionRowIndex % 2 === 0) {
-            pdf.setFillColor(248, 250, 255);
+            pdf.setFillColor(250, 250, 250);
             pdf.rect(20, yPosition - 3, 165, 7, 'F');
           }
           
@@ -678,7 +678,7 @@ while ($row = mysqli_fetch_assoc($monthly_sales_result)) {
         // Monthly subtotal
         yPosition += 3;
         pdf.setFont(undefined, 'bold');
-        pdf.setFillColor(255, 204, 0);
+        pdf.setFillColor(220, 220, 220);
         pdf.rect(120, yPosition - 3, 65, 8, 'F');
         pdf.text(`${monthYear} Total: ₱${monthlyTotal.toLocaleString('en-US', {minimumFractionDigits: 2})}`, 125, yPosition + 2);
         yPosition += 15;
@@ -693,7 +693,7 @@ while ($row = mysqli_fetch_assoc($monthly_sales_result)) {
       }
       
       // Draw separator line
-      pdf.setDrawColor(0, 64, 128);
+      pdf.setDrawColor(0, 0, 0);
       pdf.line(20, yPosition, 190, yPosition);
       yPosition += 10;
       
@@ -718,7 +718,7 @@ while ($row = mysqli_fetch_assoc($monthly_sales_result)) {
         pdf.setPage(i);
         pdf.setFontSize(8);
         pdf.setFont(undefined, 'normal');
-        pdf.setTextColor(128, 128, 128);
+        pdf.setTextColor(100, 100, 100);
         pdf.text(`Page ${i} of ${pageCount}`, 105, 290, { align: 'center' });
         pdf.text('Abeth Hardware - Customer Orders Report', 105, 285, { align: 'center' });
       }

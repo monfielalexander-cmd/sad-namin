@@ -7,6 +7,56 @@ if (!isset($_SESSION['username'])) {
   exit;
 }
 
+// Handle void transaction request
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['void_transaction'])) {
+    $transaction_id = intval($_POST['transaction_id']);
+    $void_reason = $conn->real_escape_string($_POST['void_reason']);
+    
+    $conn->begin_transaction();
+    
+    try {
+        // Get transaction items to restore stock
+        $items_query = $conn->prepare("SELECT ti.product_id, ti.quantity FROM transaction_items ti WHERE ti.transaction_id = ?");
+        $items_query->bind_param("i", $transaction_id);
+        $items_query->execute();
+        $items_result = $items_query->get_result();
+        
+        $stock_stmt_main = $conn->prepare("UPDATE products_ko SET stock = stock + ? WHERE id = ?");
+        $stock_stmt_variant = $conn->prepare("UPDATE product_variants SET stock = stock + ? WHERE product_id = ?");
+        
+        while ($item = $items_result->fetch_assoc()) {
+            $product_id = $item['product_id'];
+            $qty = $item['quantity'];
+            
+            // Restore main product stock
+            $stock_stmt_main->bind_param("ii", $qty, $product_id);
+            $stock_stmt_main->execute();
+            
+            // Also restore variant stock if exists
+            $stock_stmt_variant->bind_param("ii", $qty, $product_id);
+            $stock_stmt_variant->execute();
+        }
+        
+        $items_query->close();
+        $stock_stmt_main->close();
+        $stock_stmt_variant->close();
+        
+        // Mark transaction as voided
+        $void_stmt = $conn->prepare("UPDATE transactions SET source = 'voided', transaction_date = NOW() WHERE transaction_id = ?");
+        $void_stmt->bind_param("i", $transaction_id);
+        $void_stmt->execute();
+        $void_stmt->close();
+        
+        $conn->commit();
+        header("Location: onsite_transaction.php?voided=1");
+        exit();
+        
+    } catch (Exception $e) {
+        $conn->rollback();
+        die("Void transaction failed: " . htmlspecialchars($e->getMessage()));
+    }
+}
+
 // If POSTed from pos.php, process & insert transaction + items
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['transaction_data'])) {
     $transaction_json = $_POST['transaction_data'];
@@ -29,41 +79,71 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['transaction_data'])) 
             $stmt->close();
 
             $item_stmt = $conn->prepare("INSERT INTO transaction_items (transaction_id, product_id, quantity, price) VALUES (?, ?, ?, ?)");
-            $stock_stmt = $conn->prepare("UPDATE products_ko SET stock = stock - ? WHERE id = ? AND stock >= ?");
+            $stock_stmt_main = $conn->prepare("UPDATE products_ko SET stock = stock - ? WHERE id = ? AND stock >= ?");
+            $stock_stmt_variant = $conn->prepare("UPDATE product_variants SET stock = stock - ? WHERE id = ? AND stock >= ?");
 
             foreach ($data['items'] as $it) {
-                $product_id = intval($it['id']);
+                $id_string = $it['id'];
                 $qty = intval($it['qty']);
                 $price = floatval($it['price']);
 
-                // Insert each item
-                $item_stmt->bind_param("iiid", $transaction_id, $product_id, $qty, $price);
-                $item_stmt->execute();
+                // Check if this is a variant item (format: "productId_variantId")
+                if (strpos($id_string, '_') !== false) {
+                    // Variant product
+                    list($product_id, $variant_id) = explode('_', $id_string);
+                    $product_id = intval($product_id);
+                    $variant_id = intval($variant_id);
 
-                // Decrease stock safely (only if enough stock)
-                $stock_stmt->bind_param("iii", $qty, $product_id, $qty);
-                $stock_stmt->execute();
+                    // Insert transaction item with product_id
+                    $item_stmt->bind_param("iiid", $transaction_id, $product_id, $qty, $price);
+                    $item_stmt->execute();
 
-                if ($stock_stmt->affected_rows === 0) {
-                    // Rollback if stock insufficient
-                    throw new Exception("Insufficient stock for product ID: $product_id");
+                    // Update variant stock
+                    $stock_stmt_variant->bind_param("iii", $qty, $variant_id, $qty);
+                    $stock_stmt_variant->execute();
+
+                    if ($stock_stmt_variant->affected_rows === 0) {
+                        throw new Exception("Insufficient stock for variant ID: $variant_id");
+                    }
+                } else {
+                    // Non-variant product
+                    $product_id = intval($id_string);
+
+                    // Insert transaction item
+                    $item_stmt->bind_param("iiid", $transaction_id, $product_id, $qty, $price);
+                    $item_stmt->execute();
+
+                    // Update main product stock
+                    $stock_stmt_main->bind_param("iii", $qty, $product_id, $qty);
+                    $stock_stmt_main->execute();
+
+                    if ($stock_stmt_main->affected_rows === 0) {
+                        throw new Exception("Insufficient stock for product ID: $product_id");
+                    }
                 }
             }
 
             $item_stmt->close();
-            $stock_stmt->close();
+            $stock_stmt_main->close();
+            $stock_stmt_variant->close();
 
             $conn->commit();
 
-            header("Location: onsite_transaction.php?inserted=1");
+            // Return success without redirect (for AJAX)
+            http_response_code(200);
+            echo json_encode(['success' => true, 'transaction_id' => $transaction_id]);
             exit();
 
         } catch (Exception $e) {
             $conn->rollback();
-            die("Transaction failed: " . htmlspecialchars($e->getMessage()));
+            http_response_code(500);
+            echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+            exit();
         }
     } else {
-        die("Invalid transaction data.");
+        http_response_code(400);
+        echo json_encode(['success' => false, 'error' => 'Invalid transaction data']);
+        exit();
     }
 }
 
@@ -119,9 +199,9 @@ while ($row = $monthly_sales_result->fetch_assoc()) {
         <a href="pos.php" class="back-btn">⬅ Back</a>
         <h2>Onsite POS Transactions</h2>
 
-        <?php if (isset($_GET['inserted'])): ?>
+        <?php if (isset($_GET['voided'])): ?>
           <div class="success-message">
-            ✅ Transaction saved successfully!
+            ✅ Transaction voided successfully! Stock has been restored.
           </div>
         <?php endif; ?>
 
@@ -133,6 +213,7 @@ while ($row = $monthly_sales_result->fetch_assoc()) {
               <th>Total Amount (₱)</th>
               <th>Date</th>
               <th>Items</th>
+              <th>Action</th>
             </tr>
           </thead>
           <tbody>
@@ -164,6 +245,9 @@ while ($row = $monthly_sales_result->fetch_assoc()) {
                 <td>₱<?= number_format($t['total_amount'],2) ?></td>
                 <td><?= htmlspecialchars($t['transaction_date']) ?></td>
                 <td><button class="view-items" data-items='<?= json_encode($items) ?>'>View Items</button></td>
+                <td>
+                  <button class="void-btn" onclick="openVoidModal(<?= $t['transaction_id'] ?>)">Void</button>
+                </td>
               </tr>
             <?php } ?>
           </tbody>
@@ -195,11 +279,50 @@ while ($row = $monthly_sales_result->fetch_assoc()) {
 <div id="itemsModal" class="modal-overlay">
   <div class="modal-box">
     <h3>Purchased Items</h3>
-    <table style="width:100%; border-collapse:collapse;">
-      <thead><tr><th>Product</th><th>Category</th><th>Qty</th><th>Price</th><th>Subtotal</th></tr></thead>
-      <tbody id="modalItemsBody"></tbody>
-    </table>
-    <button class="close-btn" onclick="closeModal()">Close</button>
+    <div class="modal-content">
+      <table>
+        <thead>
+          <tr>
+            <th>Product</th>
+            <th>Category</th>
+            <th>Qty</th>
+            <th>Price</th>
+            <th>Subtotal</th>
+          </tr>
+        </thead>
+        <tbody id="modalItemsBody"></tbody>
+      </table>
+    </div>
+    <div class="modal-footer">
+      <button class="close-btn" onclick="closeModal()">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- VOID MODAL -->
+<div id="voidModal" class="modal-overlay" style="display: none;">
+  <div class="modal-box" style="max-width: 550px;">
+    <h3>Void Transaction</h3>
+    <div class="modal-content void-modal-content">
+      <p class="void-warning-text">
+        Are you sure you want to void this transaction?
+      </p>
+      <p class="void-description">
+        This will restore the stock and mark the transaction as voided.
+      </p>
+      <form id="voidForm" method="POST" action="onsite_transaction.php">
+        <input type="hidden" name="void_transaction" value="1">
+        <input type="hidden" name="transaction_id" id="voidTransactionId">
+        <div class="void-reason-container">
+          <label class="void-label">Reason for voiding:</label>
+          <textarea name="void_reason" required class="void-textarea" placeholder="Enter reason for voiding this transaction..." onfocus="this.style.borderColor='#1e3c72'" onblur="this.style.borderColor='#e0e0e0'"></textarea>
+        </div>
+        <div class="void-button-container">
+          <button type="submit" class="void-confirm-btn">Confirm Void</button>
+          <button type="button" class="close-btn" onclick="closeVoidModal()">Cancel</button>
+        </div>
+      </form>
+    </div>
   </div>
 </div>
 
@@ -223,6 +346,16 @@ document.querySelectorAll(".view-items").forEach(btn => {
   });
 });
 function closeModal(){ document.getElementById("itemsModal").style.display = "none"; }
+
+function openVoidModal(transactionId) {
+  document.getElementById('voidTransactionId').value = transactionId;
+  document.getElementById('voidModal').style.display = 'flex';
+}
+
+function closeVoidModal() {
+  document.getElementById('voidModal').style.display = 'none';
+  document.getElementById('voidForm').reset();
+}
 
 new Chart(document.getElementById('salesChart'), {
   type: 'pie',

@@ -569,12 +569,16 @@ function showReceipt(transactionData) {
   const now = new Date();
   const receiptNumber = 'R' + now.getFullYear() + (now.getMonth()+1).toString().padStart(2,'0') + now.getDate().toString().padStart(2,'0') + now.getTime().toString().slice(-6);
   
+  // Format date and time
+  const formattedDate = now.toLocaleDateString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit' });
+  const formattedTime = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+  
   let receiptHTML = `
     <div class="receipt-header">
       <h2>ABETH HARDWARE</h2>
-      <p>Point of Sale System</p>
-      <p>Date: ${now.toLocaleDateString()} ${now.toLocaleTimeString()}</p>
-      <p>Receipt #: ${receiptNumber}</p>
+      <p class="receipt-subtitle">Point of Sale System</p>
+      <p class="receipt-date">Date: ${formattedDate} ${formattedTime}</p>
+      <p class="receipt-number">Receipt #: ${receiptNumber}</p>
     </div>
     
     <div class="receipt-separator"></div>
@@ -584,36 +588,41 @@ function showReceipt(transactionData) {
         <span>Cashier:</span>
         <span><?= $_SESSION['username'] ?></span>
       </div>
-      <div class="info-separator"></div>
       <div class="info-row">
         <span>Payment:</span>
         <span>${transactionData.payment_mode.toUpperCase()}</span>
       </div>
     </div>
     
-    <div class="receipt-items-separator"></div>
+    <div class="receipt-separator"></div>
     
     <div class="receipt-items">`;
   
   transactionData.items.forEach(item => {
     const itemTotal = item.qty * item.price;
     receiptHTML += `
-      <div class="receipt-item-row">
-        <div class="item-name">${item.name}</div>
-        <div class="item-price">₱${itemTotal.toFixed(2)}</div>
-      </div>
-      <div class="item-qty-line">${item.qty} x ₱${item.price.toFixed(2)}</div>`;
+      <div class="receipt-item">
+        <div class="item-name-full">${item.name}</div>
+        <div class="item-details">
+          <span class="item-qty">${item.qty} x ₱${item.price.toFixed(2)}</span>
+          <span class="item-total">₱${itemTotal.toFixed(2)}</span>
+        </div>
+      </div>`;
   });
   
   receiptHTML += `
     </div>
     
-    <div class="receipt-items-separator"></div>
+    <div class="receipt-separator"></div>
     
     <div class="receipt-totals">
       <div class="total-row">
         <span>Subtotal:</span>
         <span>₱${transactionData.subtotal.toFixed(2)}</span>
+      </div>
+      <div class="total-row final-total">
+        <span>TOTAL:</span>
+        <span>₱${transactionData.total.toFixed(2)}</span>
       </div>`;
   
   if (transactionData.payment_mode === 'cash') {
@@ -628,17 +637,13 @@ function showReceipt(transactionData) {
       </div>`;
   } else if (transactionData.payment_mode === 'gcash') {
     receiptHTML += `
-      <div class="total-row">
+      <div class="total-row gcash-ref">
         <span>GCash Ref:</span>
         <span>${transactionData.gcash_ref}</span>
       </div>`;
   }
   
   receiptHTML += `
-      <div class="final-total">
-        <span>TOTAL:</span>
-        <span>₱${transactionData.total.toFixed(2)}</span>
-      </div>
     </div>
     
     <div class="receipt-separator"></div>
@@ -646,8 +651,7 @@ function showReceipt(transactionData) {
     <div class="receipt-footer">
       <p>Thank you for your purchase!</p>
       <p>Please come again</p>
-      <br>
-      <p>This serves as your official receipt</p>
+      <p class="receipt-note">This serves as your official receipt</p>
     </div>`;
   
   receiptContent.innerHTML = receiptHTML;
@@ -720,7 +724,7 @@ function submitTransactionToServer(transactionData) {
   statusDiv.style.textAlign = 'center';
   statusDiv.style.marginTop = '10px';
   
-  // Save transaction data to database via AJAX to avoid page redirect
+  // Save transaction data to database via AJAX
   const formData = new FormData();
   formData.append('transaction_data', JSON.stringify(transactionData));
   
@@ -728,19 +732,18 @@ function submitTransactionToServer(transactionData) {
     method: 'POST',
     body: formData
   })
-  .then(response => {
-    if (response.ok) {
+  .then(response => response.json())
+  .then(result => {
+    if (result.success) {
       console.log('Transaction saved successfully to database');
-      statusDiv.innerHTML = '✅ Transaction saved successfully!';
+      statusDiv.innerHTML = '✅ Transaction saved successfully! Transaction ID: ' + result.transaction_id;
       statusDiv.style.background = 'linear-gradient(45deg, #27ae60, #2ecc71)';
       
-      // Hide status after 3 seconds
-      setTimeout(() => {
-        statusDiv.style.display = 'none';
-      }, 3000);
+      // Keep the success message visible
+      // Don't redirect - let user stay on POS page
     } else {
-      console.error('Error saving transaction to database');
-      statusDiv.innerHTML = '⚠️ Warning: Issue saving to database';
+      console.error('Error saving transaction:', result.error);
+      statusDiv.innerHTML = '⚠️ Error: ' + result.error;
       statusDiv.style.background = 'linear-gradient(45deg, #e74c3c, #c0392b)';
     }
   })

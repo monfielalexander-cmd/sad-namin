@@ -210,6 +210,48 @@ tbody tr:hover {
   box-shadow: 0 4px 12px rgba(0, 102, 204, 0.4);
 }
 
+.void-btn {
+  background: linear-gradient(45deg, #e74c3c, #c0392b);
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+  transition: var(--transition);
+  box-shadow: 0 2px 8px rgba(231, 76, 60, 0.3);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.void-btn:hover {
+  background: linear-gradient(45deg, #c0392b, #a93226);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(231, 76, 60, 0.4);
+}
+
+.void-confirm-btn {
+  background: linear-gradient(45deg, #e74c3c, #c0392b);
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 25px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 600;
+  transition: var(--transition);
+  box-shadow: 0 2px 8px rgba(231, 76, 60, 0.3);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.void-confirm-btn:hover {
+  background: linear-gradient(45deg, #c0392b, #a93226);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(231, 76, 60, 0.4);
+}
+
 /* ==============================
    ENHANCED SUCCESS MESSAGE & PAGINATION
 ============================== */
@@ -325,9 +367,9 @@ tbody tr:hover {
   padding: 0;
   border-radius: var(--border-radius);
   width: 100%;
-  max-width: 650px;
+  max-width: 850px;
   max-height: calc(100vh - 60px);
-  overflow: visible;
+  overflow: hidden;
   box-shadow: var(--shadow-heavy);
   border: 2px solid rgba(255, 255, 255, 0.3);
   animation: modalSlideIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
@@ -371,15 +413,15 @@ tbody tr:hover {
 .modal-box h3 {
   background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
   color: white !important;
-  margin: 10px;
-  padding: 25px 35px 30px;
+  margin: 0;
+  padding: 30px 40px 35px;
   font-size: 1.4rem;
   font-weight: 700;
   text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.3);
   position: relative;
   z-index: 2;
   flex-shrink: 0;
-  border-radius: 15px 15px 0 0;
+  border-radius: 12px 12px 0 0;
   text-align: center;
   -webkit-text-fill-color: white !important;
   background-clip: unset !important;
@@ -391,10 +433,8 @@ tbody tr:hover {
 }
 
 .modal-box h3::before {
-  content: '🛍️';
-  font-size: 1.3rem;
-  margin-right: 10px;
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+  content: '';
+  display: none;
 }
 
 .modal-box h3::after {
@@ -426,39 +466,41 @@ tbody tr:hover {
   }
   
   .modal-box h3 {
-    padding: 30px 40px 35px !important;
+    padding: 32px 45px 38px !important;
   }
   
   .modal-footer {
-    padding: 20px !important;
+    padding: 28px !important;
     display: flex !important;
     justify-content: center !important;
     align-items: center !important;
   }
   
   .close-btn {
-    padding: 6px 12px !important;
-    font-size: 0.75rem !important;
-    border-radius: 18px !important;
-    gap: 4px !important;
-    min-width: auto !important;
-    width: auto !important;
+    padding: 12px 24px !important;
+    font-size: 0.9rem !important;
+    border-radius: 25px !important;
+    gap: 6px !important;
   }
   
   .close-btn::after {
-    font-size: 0.7rem !important;
-    margin-left: 1px !important;
+    font-size: 0.9rem !important;
   }
 }
 
 .modal-content {
   flex: 1;
-  overflow-y: auto;
+  overflow: hidden;
   padding: 0;
-  min-height: 250px;
+  min-height: auto;
   background: #ffffff;
   position: relative;
   border-radius: 0;
+}
+
+/* Add breathing room above and below table in view items modal */
+.modal-content:has(table) {
+  padding: 25px 0;
 }
 
 /* Enhanced Modal Table Styling - Clean Full Width Layout */
@@ -476,7 +518,7 @@ tbody tr:hover {
 .modal-content table th {
   background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
   color: white;
-  padding: 20px 24px;
+  padding: 20px 35px;
   font-size: 0.95rem;
   font-weight: 600;
   text-transform: uppercase;
@@ -496,7 +538,7 @@ tbody tr:hover {
 }
 
 .modal-content table td {
-  padding: 20px 24px;
+  padding: 20px 35px;
   border-bottom: 1px solid rgba(30, 60, 114, 0.08);
   font-size: 1rem;
   color: var(--text-dark);
@@ -543,10 +585,10 @@ tbody tr:hover {
 /* Modal Footer - Clean Layout v2.6 */
 .modal-footer {
   flex-shrink: 0;
-  padding: 20px;
+  padding: 28px;
   border-top: 1px solid rgba(30, 60, 114, 0.1);
   background: linear-gradient(145deg, #f8faff 0%, #f0f8ff 100%);
-  border-radius: 0 0 15px 15px;
+  border-radius: 0 0 12px 12px;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5);
   display: flex;
   justify-content: center;
@@ -559,31 +601,28 @@ tbody tr:hover {
   background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
   color: white;
   border: none;
-  border-radius: 18px;
-  padding: 6px 12px;
+  border-radius: 25px;
+  padding: 12px 24px;
   cursor: pointer;
-  font-size: 0.75rem;
+  font-size: 0.9rem;
   font-weight: 600;
   transition: var(--transition);
   box-shadow: 0 2px 8px rgba(231, 76, 60, 0.3);
   text-transform: uppercase;
-  letter-spacing: 0.2px;
-  margin: 10px;
-  position: center;
+  letter-spacing: 0.5px;
+  margin: 0;
+  position: relative;
   overflow: hidden;
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  min-width: auto;
-  width: auto;
-  max-width: fit-content;
+  justify-content: center;
+  gap: 6px;
 }
 
 .close-btn::after {
   content: '✕';
-  font-size: 0.7rem;
+  font-size: 0.9rem;
   font-weight: bold;
-  margin-left: 1px;
 }
 
 .close-btn::before {
@@ -719,7 +758,7 @@ tbody tr:hover {
   }
   
   .modal-box h3 {
-    padding: 20px 25px 25px;
+    padding: 26px 30px 30px;
     font-size: 1.2rem;
   }
   
@@ -733,23 +772,23 @@ tbody tr:hover {
   }
   
   .modal-content table th {
-    padding: 16px 20px;
-    font-size: 0.9.rem;
+    padding: 18px 28px;
+    font-size: 0.9rem;
   }
   
   .modal-content table td {
-    padding: 16px 20px;
+    padding: 18px 28px;
     font-size: 0.9rem;
   }
   
   .close-btn {
-    padding: 6px 10px;
-    font-size: 0.7rem;
-    gap: 3px;
+    padding: 12px 24px;
+    font-size: 0.9rem;
+    gap: 6px;
   }
   
   .modal-footer {
-    padding: 20px !important;
+    padding: 24px !important;
     display: flex !important;
     justify-content: center !important;
     align-items: center !important;
@@ -792,19 +831,61 @@ tbody tr:hover {
 
 /* Scroll indicator for modal content */
 .modal-content::after {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 40px;
-  height: 3px;
-  background: linear-gradient(45deg, rgba(30, 60, 114, 0.2), rgba(42, 82, 152, 0.2));
-  border-radius: 2px;
-  opacity: 0;
-  transition: opacity 0.3s ease;
+  display: none;
 }
 
-.modal-content:hover::after {
-  opacity: 1;
+/* ==============================
+   VOID MODAL CUSTOM STYLES
+============================== */
+.void-modal-content {
+  padding: 40px 45px !important;
+}
+
+.void-warning-text {
+  text-align: center;
+  color: #e74c3c;
+  font-weight: 700;
+  font-size: 1.2rem;
+  margin-bottom: 15px;
+}
+
+.void-description {
+  text-align: center;
+  color: #666;
+  font-size: 0.95rem;
+  margin-bottom: 35px;
+  line-height: 1.6;
+}
+
+.void-reason-container {
+  margin-bottom: 30px;
+}
+
+.void-label {
+  display: block;
+  margin-bottom: 12px;
+  font-weight: 600;
+  color: #1e3c72;
+  font-size: 1rem;
+}
+
+.void-textarea {
+  width: 100%;
+  padding: 16px;
+  border: 2px solid #e0e0e0;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  font-family: 'Poppins', sans-serif;
+  min-height: 110px;
+  resize: vertical;
+  transition: border-color 0.3s ease;
+  box-sizing: border-box;
+  line-height: 1.6;
+}
+
+.void-button-container {
+  display: flex;
+  gap: 15px;
+  justify-content: center;
+  margin-top: 35px;
 }

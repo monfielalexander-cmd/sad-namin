@@ -315,6 +315,19 @@ header button:active {
   z-index: 3;
 }
 
+/* Additional positions for 5-item display */
+.carousel-item.prev-2 {
+  transform: translateX(-560px) rotateY(35deg) scale(0.75);
+  opacity: 0.7;
+  z-index: 2;
+}
+
+.carousel-item.next-2 {
+  transform: translateX(560px) rotateY(-35deg) scale(0.75);
+  opacity: 0.7;
+  z-index: 2;
+}
+
 /* Card image */
 .carousel-item img {
   width: 100%;
