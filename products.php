@@ -386,31 +386,49 @@ if ($transactions_result) {
 <div class="header">
   <h3>ABETH HARDWARE</h3>
   <div class="top-right">
-    <button class="home-btn" onclick="window.location.href='index.php'">Home</button>
-    <button class="history-btn" onclick="toggleHistory()">History</button>
-    <form action="logout.php" method="POST">
-      <button type="submit" class="logout-btn">Logout</button>
-    </form>
+    <button class="burger-menu" onclick="toggleMenu()" aria-label="Menu">
+      <span></span>
+      <span></span>
+      <span></span>
+    </button>
+    <div class="dropdown-menu" id="dropdownMenu">
+      <a href="index.php" class="menu-item">
+        <span class="menu-icon">🏠</span>
+        <span>Home</span>
+      </a>
+      <a href="javascript:void(0)" onclick="toggleHistory()" class="menu-item">
+        <span class="menu-icon">📋</span>
+        <span>History</span>
+      </a>
+      <form action="logout.php" method="POST" style="margin: 0;">
+        <button type="submit" class="menu-item logout-item">
+          <span class="menu-icon">🚪</span>
+          <span>Logout</span>
+        </button>
+      </form>
+    </div>
   </div>
 </div>
 
 <div class="layout">
   <div class="left-panel">
-    <h2>Available Products</h2>
-    <form method="GET" style="margin-bottom: 20px;">
-      <label for="category"><strong>Filter by Category:</strong></label>
-      <select name="category" id="category" onchange="this.form.submit()">
-        <option value="">All</option>
-        <?php if ($categories && $categories->num_rows > 0): ?>
-          <?php while ($cat = $categories->fetch_assoc()): ?>
-            <option value="<?= htmlspecialchars($cat['category']) ?>" 
-              <?= ($selected_category === $cat['category']) ? 'selected' : '' ?>>
-              <?= htmlspecialchars($cat['category']) ?>
-            </option>
-          <?php endwhile; ?>
-        <?php endif; ?>
-      </select>
-    </form>
+    
+    <div class="filter-section">
+      <form method="GET">
+        <label for="category">Filter by Category:</label>
+        <select name="category" id="category" onchange="this.form.submit()">
+          <option value="">All Categories</option>
+          <?php if ($categories && $categories->num_rows > 0): ?>
+            <?php while ($cat = $categories->fetch_assoc()): ?>
+              <option value="<?= htmlspecialchars($cat['category']) ?>" 
+                <?= ($selected_category === $cat['category']) ? 'selected' : '' ?>>
+                <?= htmlspecialchars($cat['category']) ?>
+              </option>
+            <?php endwhile; ?>
+          <?php endif; ?>
+        </select>
+      </form>
+    </div>
 
     <div class="product-grid">
       <?php if ($products && $products->num_rows > 0): ?>
@@ -671,8 +689,23 @@ if ($transactions_result) {
 </div>
 
 <script>
+function toggleMenu() {
+  document.getElementById('dropdownMenu').classList.toggle('active');
+}
+
+// Close dropdown when clicking outside
+document.addEventListener('click', (e) => {
+  const burger = document.querySelector('.burger-menu');
+  const dropdown = document.getElementById('dropdownMenu');
+  if (dropdown && !burger.contains(e.target) && !dropdown.contains(e.target)) {
+    dropdown.classList.remove('active');
+  }
+});
+
 function toggleHistory() {
   document.getElementById('historyPanel').classList.toggle('active');
+  // Close menu when opening history
+  document.getElementById('dropdownMenu').classList.remove('active');
 }
 
 // Delivery fields toggle
