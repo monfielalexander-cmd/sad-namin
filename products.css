@@ -191,7 +191,7 @@ body {
   transition: all 0.3s ease;
   max-width: calc(100% - 420px);
   overflow-y: auto;
-  max-height: calc(100vh - 100px);
+  max-height: calc(100vh - 180px);
   padding-right: 20px;
 }
 
@@ -814,6 +814,24 @@ form[method="GET"] select:focus {
   transform: scale(1.1);
 }
 
+.cart-badge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  background: linear-gradient(45deg, #e74c3c, #c0392b);
+  color: white;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border: 2px solid white;
+  box-shadow: 0 2px 8px rgba(231, 76, 60, 0.4);
+}
+
 /* ===============================
    HISTORY PANEL
 =============================== */
@@ -825,7 +843,7 @@ form[method="GET"] select:focus {
   height: 100vh;
   background: linear-gradient(145deg, #ffffff 0%, #f8faff 100%);
   box-shadow: -8px 0 40px rgba(0, 64, 128, 0.2);
-  padding: 30px 20px;
+  padding: 100px 20px 30px 20px;
   overflow-y: auto;
   transition: right 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
   z-index: 10000;
@@ -1016,7 +1034,7 @@ form[method="GET"] select:focus {
 
 .close-btn {
   position: absolute;
-  top: 20px;
+  top: 70px;
   right: 20px;
   background: linear-gradient(45deg, var(--danger-red), #c0392b);
   color: white;
@@ -1273,7 +1291,7 @@ form[method="GET"] select:focus {
     transform: translateX(100%);
     z-index: 10000;
     padding: 0;
-    padding-top: 0;
+    padding-top: 48px;
   }
   
   .right-panel.active {
@@ -1282,6 +1300,7 @@ form[method="GET"] select:focus {
   
   .cart-header {
     margin-top: 0;
+    position: relative;
   }
   
   .cart-content {
@@ -1459,7 +1478,7 @@ form[method="GET"] select:focus {
   }
   
   .close-btn {
-    top: 25px;
+    top: 15px;
     right: 20px;
     width: 42px;
     height: 42px;
@@ -1467,6 +1486,7 @@ form[method="GET"] select:focus {
     border: 3px solid white;
     box-shadow: 0 4px 20px rgba(231, 76, 60, 0.6), 0 0 0 2px rgba(255, 255, 255, 0.9);
     font-weight: 900;
+    z-index: 10002;
   }
   
   .cart-header {

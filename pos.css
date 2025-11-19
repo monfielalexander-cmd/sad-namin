@@ -741,7 +741,7 @@ form[method="GET"] select:focus {
 
 .receipt {
   width: 100%;
-  font-family: 'Courier New', monospace;
+  font-family: 'Poppins', sans-serif;
   font-size: 13px;
   line-height: 1.5;
   color: #000;

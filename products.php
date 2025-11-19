@@ -335,6 +335,7 @@ $cart = $conn->query("
     LEFT JOIN product_variants v ON c.variant_id = v.id
     WHERE c.customer_id='$customer_id'
 ");
+$cart_count = $cart ? $cart->num_rows : 0;
 $transactions_result = $conn->query("
     SELECT t.transaction_id, t.transaction_date, t.total_amount, ti.product_name, ti.quantity, ti.price
     FROM transactions t
@@ -383,7 +384,7 @@ if ($transactions_result) {
 <body>
 
 <div class="header">
-  <h3>WELCOME TO ABETH HARDWARE!</h3>
+  <h3>ABETH HARDWARE</h3>
   <div class="top-right">
     <button class="home-btn" onclick="window.location.href='index.php'">Home</button>
     <button class="history-btn" onclick="toggleHistory()">History</button>
@@ -518,7 +519,12 @@ if ($transactions_result) {
   </div>
 </div>
 
-<button id="cartToggleBtn" class="cart-float-btn">🛒</button>
+<button id="cartToggleBtn" class="cart-float-btn">
+  🛒
+  <?php if ($cart_count > 0): ?>
+    <span class="cart-badge"><?= $cart_count ?></span>
+  <?php endif; ?>
+</button>
 
 <!-- Payment Method Modal -->
 <div id="paymentModal" class="payment-modal" style="display: none;">
