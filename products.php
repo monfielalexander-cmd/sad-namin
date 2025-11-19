@@ -428,17 +428,19 @@ if ($transactions_result) {
             <?php endif; ?>
             <div class="product-footer">
               <h4><?= htmlspecialchars($p['name']) ?></h4>
+              <p class="stock-info"><?= $available_stock ?> available</p>
+              
               <?php if ($available_stock > 0): ?>
                 <?php if ($has_variants): ?>
-                  <button type="button" class="add-cart-btn" onclick="openSizeModal(<?= $p['id'] ?>, '<?= htmlspecialchars($p['name'], ENT_QUOTES) ?>', <?= $p['price'] ?>)" style="font-size: 0.8rem; padding: 8px 14px;">Add</button>
+                  <button type="button" class="add-cart-btn" onclick="openSizeModal(<?= $p['id'] ?>, '<?= htmlspecialchars($p['name'], ENT_QUOTES) ?>', <?= $p['price'] ?>)">Add</button>
                 <?php else: ?>
-                  <form method="POST">
+                  <form method="POST" style="width: 100%;">
                     <input type="hidden" name="product_id" value="<?= $p['id'] ?>">
-                    <button type="submit" class="add-cart-btn" name="add_to_cart" style="font-size: 0.8rem; padding: 8px 14px;">Add</button>
+                    <button type="submit" class="add-cart-btn" name="add_to_cart">Add</button>
                   </form>
                 <?php endif; ?>
               <?php else: ?>
-                <button type="button" class="add-cart-btn" disabled style="background-color: #999; cursor: not-allowed; font-size: 0.75rem; padding: 8px 12px;">Out of Stock</button>
+                <button type="button" class="add-cart-btn" disabled style="background: linear-gradient(45deg, #999, #777); cursor: not-allowed;">Out of Stock</button>
               <?php endif; ?>
             </div>
           </div>
@@ -617,8 +619,10 @@ if ($transactions_result) {
 </form>
 
 <div id="historyPanel" class="history-container">
-  <button class="close-btn" onclick="toggleHistory()">&times;</button>
-  <h3>📋 Purchase History</h3>
+  <h3>
+    📋 Purchase History
+    <button class="close-btn" onclick="toggleHistory()">&times;</button>
+  </h3>
   <?php if (!empty($transactions)): ?>
     <?php foreach ($transactions as $id => $t): ?>
       <div class="history-item">
