@@ -149,6 +149,7 @@ table {
   box-shadow: var(--shadow-medium);
   margin-top: 20px;
   border: 1px solid rgba(255, 255, 255, 0.8);
+  font-size: 0.9rem;
 }
 
 th {
@@ -168,7 +169,7 @@ th {
 td {
   padding: 15px 12px;
   border-bottom: 1px solid rgba(0, 64, 128, 0.1);
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   color: var(--text-dark);
 }
 
@@ -282,7 +283,7 @@ tbody tr:hover {
 .pagination {
   margin-top: 25px;
   text-align: center;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   color: var(--text-dark);
 }
 
@@ -298,7 +299,7 @@ tbody tr:hover {
   box-shadow: 0 2px 8px rgba(0, 102, 204, 0.3);
   text-transform: uppercase;
   letter-spacing: 0.3px;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
 }
 
 .pagination a:hover {
@@ -328,7 +329,7 @@ tbody tr:hover {
 
 .summary-box strong {
   color: var(--success-green);
-  font-size: 1.2rem;
+  font-size: 1.3rem;
 }
 
 /* ==============================
@@ -415,7 +416,7 @@ tbody tr:hover {
   color: white !important;
   margin: 0;
   padding: 30px 40px 35px;
-  font-size: 1.4rem;
+  font-size: 1.2rem;
   font-weight: 700;
   text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.3);
   position: relative;
@@ -845,14 +846,14 @@ tbody tr:hover {
   text-align: center;
   color: #e74c3c;
   font-weight: 700;
-  font-size: 1.2rem;
+  font-size: 1rem;
   margin-bottom: 15px;
 }
 
 .void-description {
   text-align: center;
   color: #666;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   margin-bottom: 35px;
   line-height: 1.6;
 }
@@ -866,7 +867,7 @@ tbody tr:hover {
   margin-bottom: 12px;
   font-weight: 600;
   color: #1e3c72;
-  font-size: 1rem;
+  font-size: 0.9rem;
 }
 
 .void-textarea {
@@ -874,7 +875,7 @@ tbody tr:hover {
   padding: 16px;
   border: 2px solid #e0e0e0;
   border-radius: 10px;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   font-family: 'Poppins', sans-serif;
   min-height: 110px;
   resize: vertical;

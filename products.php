@@ -391,19 +391,33 @@ if ($transactions_result) {
       <span></span>
       <span></span>
     </button>
-    <div class="dropdown-menu" id="dropdownMenu">
-      <a href="index.php" class="menu-item">
-        <span class="menu-icon">🏠</span>
-        <span>Home</span>
+    <div class="dropdown-menu custom" id="dropdownMenu" role="menu" aria-hidden="true">
+      <a href="index.php" class="menu-item" role="menuitem">
+        <span class="menu-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+            <path d="M12 3.172L3 9v10a1 1 0 0 0 1 1h5v-6h6v6h5a1 1 0 0 0 1-1V9l-9-5.828z" />
+          </svg>
+        </span>
+        <span class="menu-text">Home</span>
       </a>
-      <a href="javascript:void(0)" onclick="toggleHistory()" class="menu-item">
-        <span class="menu-icon">📋</span>
-        <span>History</span>
-      </a>
+
+      <button type="button" class="menu-item" role="menuitem" onclick="toggleHistory()" aria-controls="historyPanel">
+        <span class="menu-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+            <path d="M7 2h9a1 1 0 0 1 1 1v2h2v2H5V5h2V3a1 1 0 0 1 1-1zm11 7H6v11a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V9zM8 12h8v2H8v-2zm0 4h5v2H8v-2z" />
+          </svg>
+        </span>
+        <span class="menu-text">History</span>
+      </button>
+
       <form action="logout.php" method="POST" style="margin: 0;">
-        <button type="submit" class="menu-item logout-item">
-          <span class="menu-icon">🚪</span>
-          <span>Logout</span>
+        <button type="submit" class="menu-item logout-item" role="menuitem">
+          <span class="menu-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+              <path d="M16 13v-2H7V8l-5 4 5 4v-3h9zM20 3h-8v2h8v14h-8v2h8a1 1 0 0 0 1-1V4a1 1 0 0 0-1-1z" />
+            </svg>
+          </span>
+          <span class="menu-text">Logout</span>
         </button>
       </form>
     </div>

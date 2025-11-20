@@ -17,6 +17,11 @@
   --success-green: #27ae60;
   --warning-yellow: #f39c12;
   --danger-red: #e74c3c;
+  --font-size-base: 1.15rem;
+  --font-size-lg: 1.35rem;
+  --font-size-xl: 1.7rem;
+  --font-size-sm: 1rem;
+  --font-size-xs: 0.95rem;
 }
 
 * {
@@ -35,6 +40,7 @@ body {
   color: var(--text-dark);
   background: linear-gradient(135deg, #f8faff 0%, #e8f2ff 100%);
   min-height: 100vh;
+  font-size: var(--font-size-base);
 }
 
 .orders-wrapper {
@@ -71,7 +77,7 @@ body {
 
 .top-bar h2 {
   color: var(--primary-blue);
-  font-size: 2rem;
+  font-size: var(--font-size-xl);
   font-weight: 700;
   text-shadow: 1px 1px 2px rgba(0, 64, 128, 0.1);
   background: linear-gradient(45deg, var(--primary-blue), var(--secondary-blue));
@@ -132,7 +138,7 @@ body {
   color: white;
   padding: 15px 8px;
   font-weight: 600;
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
   text-transform: uppercase;
   letter-spacing: 0.5px;
   border: none;
@@ -143,7 +149,7 @@ body {
   border: none;
   border-bottom: 1px solid rgba(0, 64, 128, 0.1);
   padding: 15px 8px;
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
   transition: var(--transition);
 }
 
@@ -166,7 +172,7 @@ body {
   border-radius: 20px;
   color: white;
   font-weight: 600;
-  font-size: 0.8rem;
+  font-size: var(--font-size-xs);
   text-transform: uppercase;
   letter-spacing: 0.5px;
   display: inline-block;
@@ -199,7 +205,7 @@ body {
   padding: 6px 12px;
   border-radius: 15px;
   font-weight: 600;
-  font-size: 0.75rem;
+  font-size: var(--font-size-xs);
   text-transform: uppercase;
   letter-spacing: 0.5px;
   display: inline-block;
@@ -230,7 +236,7 @@ body {
   padding: 8px 12px;
   border-radius: 8px;
   font-weight: 600;
-  font-size: 0.85rem;
+  font-size: var(--font-size-sm);
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -260,7 +266,7 @@ body {
 .text-muted {
   color: #999;
   font-style: italic;
-  font-size: 0.85rem;
+  font-size: var(--font-size-xs);
 }
 
 /* ==============================
@@ -333,6 +339,7 @@ input:focus + .slider {
   margin-top: 30px;
   padding-top: 20px;
   border-top: 2px solid rgba(0, 64, 128, 0.1);
+  font-size: var(--font-size-sm);
 }
 
 .page-btn {
@@ -348,6 +355,7 @@ input:focus + .slider {
   box-shadow: 0 4px 15px rgba(0, 64, 128, 0.2);
   position: relative;
   overflow: hidden;
+  font-size: var(--font-size-sm);
 }
 
 .page-btn::before {
@@ -398,26 +406,27 @@ input:focus + .slider {
   }
   
   .top-bar h2 {
-    font-size: 1.6rem;
+    font-size: 1.25rem;
   }
   
   .back-btn {
     padding: 10px 20px;
-    font-size: 0.9rem;
+    font-size: 1rem;
   }
   
   .orders-table {
-    font-size: 0.8rem;
+    font-size: 0.95rem;
   }
   
   .orders-table th,
   .orders-table td {
     padding: 10px 6px;
+    font-size: 0.95rem;
   }
   
   .status-badge {
     padding: 6px 12px;
-    font-size: 0.7rem;
+    font-size: 0.95rem;
   }
   
   .switch {
@@ -437,11 +446,12 @@ input:focus + .slider {
   .pagination {
     gap: 8px;
     flex-wrap: wrap;
+    font-size: 0.95rem;
   }
   
   .page-btn {
     padding: 8px 12px;
-    font-size: 0.8rem;
+    font-size: 0.95rem;
   }
 }
 
@@ -453,10 +463,10 @@ input:focus + .slider {
   .orders-table th,
   .orders-table td {
     padding: 8px 4px;
-    font-size: 0.7rem;
+    font-size: 0.95rem;
   }
   
   .top-bar h2 {
-    font-size: 1.4rem;
+    font-size: 1.1rem;
   }
 }

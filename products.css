@@ -238,6 +238,120 @@ body {
   transform: translateY(0);
 }
 
+/* Enhanced burger dropdown (card-like) */
+.dropdown-menu.custom {
+  background: #ffffff;
+  border-radius: 14px;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.12);
+  padding: 8px 0;
+  min-width: 220px;
+  border: none;
+  margin-top: 8px;
+  transition: box-shadow 0.18s ease, transform 0.18s ease;
+}
+
+.dropdown-menu.custom .menu-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 18px;
+  font-size: 1.02rem;
+  font-weight: 600;
+  color: #08325a;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: background 0.16s ease, color 0.16s ease, padding-left 0.16s ease;
+  border-bottom: 1px solid rgba(12, 35, 60, 0.04);
+  text-decoration: none;
+  position: relative;
+}
+
+.dropdown-menu.custom .menu-item:last-child {
+  border-bottom: none;
+}
+
+.dropdown-menu.custom .menu-item:hover,
+.dropdown-menu.custom .menu-item:focus {
+  background: linear-gradient(90deg, rgba(0,102,204,0.06) 0%, rgba(255,255,255,0) 100%);
+  color: #0056b3;
+  padding-left: 26px;
+  box-shadow: 0 6px 18px rgba(0,64,128,0.08);
+  transform: translateY(-2px);
+  z-index: 2;
+}
+
+/* gold accent bar on the left when hovered/focused */
+.dropdown-menu.custom .menu-item::before {
+  content: '';
+  position: absolute;
+  left: 12px;
+  top: 10px;
+  bottom: 10px;
+  width: 4px;
+  border-radius: 4px;
+  background: linear-gradient(180deg, var(--accent-gold), var(--dark-gold));
+  opacity: 0;
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+
+.dropdown-menu.custom .menu-item:hover::before,
+.dropdown-menu.custom .menu-item:focus::before {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+/* change icon badge to gold on hover to match system accent */
+.dropdown-menu.custom .menu-item:hover .menu-icon,
+.dropdown-menu.custom .menu-item:focus .menu-icon {
+  background: linear-gradient(135deg, var(--accent-gold), var(--dark-gold));
+  color: var(--primary-blue);
+  box-shadow: 0 6px 18px rgba(0,64,128,0.06);
+  transition: background 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
+}
+
+/* pressed state */
+.dropdown-menu.custom .menu-item:active {
+  transform: translateY(0);
+  box-shadow: 0 4px 12px rgba(0,64,128,0.06);
+}
+
+.dropdown-menu.custom .menu-icon {
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: linear-gradient(135deg, var(--primary-blue), var(--secondary-blue));
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(0, 64, 128, 0.12);
+}
+
+.dropdown-menu.custom .menu-icon svg {
+  width: 18px;
+  height: 18px;
+  display: block;
+  fill: currentColor;
+}
+
+.dropdown-menu.custom .menu-text {
+  display: inline-block;
+}
+
+.dropdown-menu.custom .logout-item .menu-icon {
+  background: linear-gradient(135deg, #e74c3c, #c0392b);
+}
+
+.dropdown-menu.custom .logout-item {
+  color: #e74c3c;
+}
+
+.dropdown-menu.custom .logout-item:hover {
+  background: linear-gradient(90deg, rgba(231,76,60,0.06) 0%, rgba(255,255,255,0) 100%);
+  color: #c0392b;
+}
+
 .menu-item {
   display: flex;
   align-items: center;
