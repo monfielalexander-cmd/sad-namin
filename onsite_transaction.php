@@ -388,10 +388,16 @@ h2, h3 {
 /* Center the main page heading inside transactions section */
 #transactionsPage h1 {
   text-align: center;
-  margin-bottom: 18px;
+  margin: 0;
   color: var(--primary-blue);
   font-weight: 700;
+  font-size: 2rem;
+  letter-spacing: 0.2px;
 }
+
+/* Page header with icon */
+.page-header { display:flex; align-items:center; justify-content:center; gap:12px; margin-bottom:18px; }
+.page-icon { width:40px; height:40px; object-fit:cover; border-radius:8px; box-shadow: 0 6px 18px rgba(0,64,128,0.12); }
 
 h2 {
   font-size: 2rem;
@@ -536,8 +542,8 @@ h3 {
 .kpi-card.wide { flex: 1 1 260px; }
 .kpi-left { display: flex; flex-direction: column; gap: 6px; }
 .kpi-title { font-size: 13px; color: #6b7280; margin: 0; }
-.kpi-value { font-weight: 800; font-size: 20px; margin: 0; color: var(--text-dark); }
-.kpi-value.large { font-size: 22px; }
+.kpi-value { font-weight: 800; font-size: 15pxpx; margin: 0; color: var(--text-dark); }
+.kpi-value.large { font-size: 20px; }
 .kpi-value.success { color: var(--success-green); }
 .kpi-value.primary { color: var(--primary-blue); }
 
@@ -563,7 +569,8 @@ h3 {
 }
 /* Daily chart container - make chart a bit smaller and centered like reference */
   .daily-chart { margin:18px auto 24px; background:linear-gradient(145deg,#fff,#f8fbff); padding:18px 22px; border-radius:12px; box-shadow:var(--shadow-light); max-width:1100px; }
-  .daily-chart h2 { margin:0 0 8px; font-size:1rem; color:var(--primary-blue); text-align:center; }
+  .daily-chart h2 { margin:0 0 8px; font-size:1rem; color:var(--primary-blue); text-align:center; position:relative; }
+  .daily-chart h2::after { content: ''; position: absolute; bottom: -8px; left: 50%; transform: translateX(-50%); width: 60px; height: 6px; background: var(--accent-gold); border-radius: 4px; }
   .daily-chart .chart-inner { display:flex; justify-content:center; }
   .daily-chart canvas { width:100%; max-width:900px; margin:12px auto 0; display:block; border-radius:8px; box-shadow: 0 8px 20px rgba(0,0,0,0.06); }
 
@@ -596,14 +603,72 @@ h3 {
 /* Page info */
 .page-info { color:var(--text-dark); margin:0 12px; }
 /* Modal styles (overlay and box for items/void) */
-.modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); align-items: center; justify-content: center; z-index: 9999; }
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); align-items: center; justify-content: center; z-index: 9999; -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); transition: backdrop-filter 0.18s ease, background 0.18s ease; }
 .modal-overlay .modal-box { background: #fff; border-radius: 10px; padding: 18px; max-width: 92%; width: 640px; box-shadow: 0 12px 30px rgba(0,0,0,0.15); }
 .modal-box .modal-footer { margin-top: 12px; text-align: right; }
 .modal-box .close-btn { background: #e9eef7; border: none; color: #004080; padding: 8px 12px; border-radius: 8px; cursor: pointer; }
 
-/* Products modal: ensure close X is clickable and positioned above content */
 #productsModal > div { position: relative; }
 #productsModal #productsModalClose { position: absolute; top: 12px; right: 12px; z-index: 11000; background: transparent; border: none; font-size: 22px; color: #0b4777; cursor: pointer; }
+
+#productsModal { padding: 18px; }
+#productsModal .modal-box {
+  width: 90%;
+  max-width: 1100px;
+  max-height: 84vh;
+  overflow: hidden;
+  padding: 22px 22px 16px 22px;
+  border-radius: 12px;
+  box-shadow: 0 20px 40px rgba(6,30,60,0.25);
+  position: relative;
+}
+#productsModal .modal-box h3 {
+  margin: 0 0 6px 0;
+  color: #0b4777;
+  font-size: 20px;
+  font-weight: 700;
+}
+#productsModal .modal-box .modal-subtitle {
+  color: #6b7280;
+  margin: 0 0 14px 0;
+  font-size: 14px;
+}
+#productsModal .modal-content { padding: 0; }
+#productsModal .table-wrapper { max-height: 64vh; overflow: auto; border-radius: 8px; background: linear-gradient(180deg,#fff,#fbfdff); border: 1px solid #eef6fb; }
+#productsModal table { width: 100%; border-collapse: collapse; }
+#productsModal thead th { background: linear-gradient(180deg,#eff7ff,#f6fbff); color: #0b4777; text-align: left; padding: 12px 16px; font-size: 13px; letter-spacing: 0.4px; border-bottom: 1px solid #e6f0f8; }
+#productsModal tbody td { padding: 14px 16px; border-bottom: 1px solid #f1f7fb; vertical-align: middle; }
+#productsModal tbody tr:nth-child(odd) td { background: linear-gradient(180deg, rgba(246,250,255,0.6), rgba(255,255,255,0.6)); }
+#productsModal tbody td:nth-child(2) { text-align: right; color: #0b4777; font-weight: 600; }
+#productsModal .modal-footer { padding: 12px 0 0 0; text-align: right; background: transparent; }
+#productsModal::-webkit-scrollbar, #productsModal .table-wrapper::-webkit-scrollbar { width: 12px; }
+#productsModal::-webkit-scrollbar-thumb, #productsModal .table-wrapper::-webkit-scrollbar-thumb { background: #cddbe9; border-radius: 8px; border: 3px solid rgba(255,255,255,0.6); }
+#productsModal #productsModalClose { font-size: 20px; color: #1e3c72; }
+
+#productsModal #productsModalClose,
+#productsModal .modal-footer .close-btn {
+  background: linear-gradient(180deg, #ff6b6b, #e74c3c);
+  color: #fff;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 28px;
+  font-weight: 700;
+  box-shadow: 0 8px 28px rgba(231,76,60,0.18), 0 0 0 6px rgba(231,76,60,0.06);
+  cursor: pointer;
+  transition: transform .12s ease, box-shadow .12s ease, opacity .12s ease;
+}
+
+#productsModal #productsModalClose:hover,
+#productsModal .modal-footer .close-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 40px rgba(231,76,60,0.22), 0 0 0 8px rgba(231,76,60,0.06);
+}
+
+#productsModal #productsModalClose:focus,
+#productsModal .modal-footer .close-btn:focus {
+  outline: 3px solid rgba(231,76,60,0.14);
+  outline-offset: 3px;
+}
 </style>
 </head>
 <body>
@@ -741,39 +806,28 @@ h3 {
 
 </div>
 
-<!-- MODAL -->
 <div id="itemsModal" class="modal-overlay">
   <div class="modal-box">
-    <h3>Purchased Items</h3>
+      <h3 class="modal-header">Purchased Items</h3>
     <div class="modal-content">
-      <table>
-        <thead>
-          <tr>
-            <th>Product</th>
-            <th>Category</th>
-            <th>Qty</th>
-            <th>Price</th>
-            <th>Subtotal</th>
-          </tr>
-        </thead>
-        <tbody id="modalItemsBody"></tbody>
-      </table>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Product</th>
+              <th>Category</th>
+              <th>Qty</th>
+              <th>Price</th>
+              <th>Subtotal</th>
+            </tr>
+          </thead>
+          <tbody id="modalItemsBody"></tbody>
+        </table>
+      </div>
     </div>
     <div class="modal-footer">
-      <button class="close-btn" onclick="closeModal()">Close</button>
+      <button class="close-btn footer-close" onclick="closeModal()">Close</button>
     </div>
-  </div>
-</div>
-
-<!-- Purchased Products Modal -->
-<div id="productsModal" class="modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.45); align-items:center; justify-content:center; z-index:9999;">
-  <div style="background:#fff; width:90%; max-width:800px; border-radius:10px; padding:16px; max-height:80vh; overflow:auto;">
-    <button style="float:right; background:transparent; border:none; font-size:20px; color:#004080;" id="productsModalClose">✕</button>
-    <h3 style="color:#004080;">Purchased Products (Onsite)</h3>
-    <table style="width:100%; margin-top:8px; border-collapse:collapse;">
-      <thead><tr><th style="text-align:left; padding:8px;">Product</th><th style="text-align:right; padding:8px; width:120px;">Qty</th></tr></thead>
-      <tbody id="productsModalBody"></tbody>
-    </table>
   </div>
 </div>
 
@@ -804,7 +858,30 @@ h3 {
   </div>
 </div>
 
-<script>
+    <!-- PRODUCTS MODAL -->
+    <div id="productsModal" class="modal-overlay">
+      <div class="modal-box">
+        <h3>Purchased Products</h3>
+        <div class="modal-content">
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>PRODUCT NAME</th>
+                  <th style="width:120px;">QUANTITY</th>
+                </tr>
+              </thead>
+              <tbody id="productsModalBody"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="close-btn" onclick="document.getElementById('productsModal').style.display='none'">Close</button>
+        </div>
+      </div>
+    </div>
+
+    <script>
 // view items modal
 document.querySelectorAll(".view-items").forEach(btn => {
   btn.addEventListener("click", function() {
@@ -868,8 +945,37 @@ document.addEventListener('DOMContentLoaded', function() {
     const borderColors = labels.map((_, i) => `hsl(${(i * 30) % 360} 70% 40%)`);
     new Chart(dailyEl.getContext('2d'), {
       type: 'bar',
-      data: { labels: labels, datasets: [{ label: 'Daily Sales (₱)', data: values, backgroundColor: barColors, borderColor: borderColors, borderWidth: 1 }] },
-      options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } }, plugins: { legend: { display: false } } }
+      data: {
+        labels: labels,
+        datasets: [{
+          label: 'Daily Sales (₱)',
+          data: values,
+          backgroundColor: barColors,
+          borderColor: borderColors,
+          borderWidth: 1,
+          maxBarThickness: 48,
+          barPercentage: 0.7,
+          categoryPercentage: 0.9
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: 'nearest', intersect: false },
+        scales: { y: { beginAtZero: true } },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            enabled: true,
+            callbacks: {
+              label: function(context) {
+                var v = context.parsed && context.parsed.y !== undefined ? context.parsed.y : context.parsed;
+                return '₱' + Number(v).toLocaleString(undefined, { minimumFractionDigits: 2 });
+              }
+            }
+          }
+        }
+      }
     });
   }
 

@@ -1,6 +1,3 @@
-/* ==============================
-   CSS VARIABLES & BASE STYLES
-============================== */
 :root {
   --primary-blue: #004080;
   --secondary-blue: #0066cc;
@@ -90,15 +87,15 @@ body {
   text-decoration: none;
   color: white;
   background: linear-gradient(45deg, var(--primary-blue), var(--secondary-blue));
-  padding: 12px 24px;
-  border-radius: 25px;
+  padding: 8px 14px;
+  border-radius: 18px;
   transition: var(--transition);
   font-weight: 600;
-  text-transform: uppercase;
   letter-spacing: 0.5px;
-  box-shadow: 0 4px 15px rgba(0, 64, 128, 0.3);
+  box-shadow: 0 3px 10px rgba(0, 64, 128, 0.25);
   position: relative;
   overflow: hidden;
+  font-size: var(--font-size-sm);
 }
 
 .back-btn::before {
@@ -136,19 +133,30 @@ body {
 .orders-table th {
   background: linear-gradient(135deg, var(--primary-blue) 0%, #0056b3 100%);
   color: white;
-  padding: 15px 8px;
+  padding: 10px 6px;
   font-weight: 600;
-  font-size: var(--font-size-sm);
+  font-size: 0.90rem;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.4px;
   border: none;
   white-space: nowrap;
+}
+
+/* Vertical grid lines between columns */
+.orders-table th,
+.orders-table td {
+  border-right: 1px solid rgba(0,64,128,0.06);
+  transition: border-color 220ms ease, background-color 220ms ease;
+}
+.orders-table th:last-child,
+.orders-table td:last-child {
+  border-right: none;
 }
 
 .orders-table td {
   border: none;
   border-bottom: 1px solid rgba(0, 64, 128, 0.1);
-  padding: 15px 8px;
+  padding: 12px 8px;
   font-size: var(--font-size-sm);
   transition: var(--transition);
 }
@@ -158,25 +166,27 @@ body {
 }
 
 .orders-table tbody tr:hover {
-  background: linear-gradient(45deg, rgba(255, 204, 0, 0.1), rgba(248, 250, 255, 0.5));
-  transform: scale(1.01);
-  box-shadow: 0 4px 15px rgba(0, 64, 128, 0.1);
+  background: linear-gradient(45deg, rgba(255, 244, 229, 0.4), rgba(248, 250, 255, 0.5));
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(0, 64, 128, 0.06);
 }
+
+/* Keep vertical separators consistent; no color change on hover */
 
 .orders-table tbody tr:last-child td {
   border-bottom: none;
 }
 
 .status-badge {
-  padding: 8px 16px;
-  border-radius: 20px;
+  padding: 6px 12px;
+  border-radius: 14px;
   color: white;
   font-weight: 600;
-  font-size: var(--font-size-xs);
+  font-size: 0.88rem;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.45px;
   display: inline-block;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
   transition: var(--transition);
 }
 
@@ -202,14 +212,14 @@ body {
    PAYMENT & GCASH REFERENCE STYLES
 ============================== */
 .payment-badge {
-  padding: 6px 12px;
-  border-radius: 15px;
+  padding: 4px 10px;
+  border-radius: 12px;
   font-weight: 600;
-  font-size: var(--font-size-xs);
+  font-size: 0.88rem;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.45px;
   display: inline-block;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
   transition: var(--transition);
 }
 
@@ -233,10 +243,10 @@ body {
   font-family: 'Poppins', sans-serif;
   background: linear-gradient(145deg, #e8f5e9, #c8e6c9);
   color: #2e7d32;
-  padding: 8px 12px;
+  padding: 6px 10px;
   border-radius: 8px;
   font-weight: 600;
-  font-size: var(--font-size-sm);
+  font-size: 0.92rem;
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -346,16 +356,16 @@ input:focus + .slider {
   text-decoration: none;
   color: white;
   background: linear-gradient(45deg, var(--primary-blue), var(--secondary-blue));
-  padding: 10px 16px;
-  border-radius: 25px;
+  padding: 8px 12px;
+  border-radius: 18px;
   transition: var(--transition);
   font-weight: 600;
-  min-width: 40px;
+  min-width: 36px;
   text-align: center;
-  box-shadow: 0 4px 15px rgba(0, 64, 128, 0.2);
+  box-shadow: 0 3px 12px rgba(0, 64, 128, 0.18);
   position: relative;
   overflow: hidden;
-  font-size: var(--font-size-sm);
+  font-size: 0.95rem;
 }
 
 .page-btn::before {
@@ -372,7 +382,7 @@ input:focus + .slider {
 .page-btn:hover {
   background: linear-gradient(45deg, var(--secondary-blue), #0080ff);
   transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(0, 64, 128, 0.3);
+  box-shadow: 0 6px 18px rgba(0, 64, 128, 0.28);
 }
 
 .page-btn:hover::before {
@@ -410,8 +420,8 @@ input:focus + .slider {
   }
   
   .back-btn {
-    padding: 10px 20px;
-    font-size: 1rem;
+    padding: 8px 14px;
+    font-size: 0.95rem;
   }
   
   .orders-table {
@@ -450,8 +460,8 @@ input:focus + .slider {
   }
   
   .page-btn {
-    padding: 8px 12px;
-    font-size: 0.95rem;
+    padding: 6px 10px;
+    font-size: 0.9rem;
   }
 }
 

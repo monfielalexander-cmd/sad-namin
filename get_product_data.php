@@ -36,7 +36,11 @@ $product = $product_query->fetch_assoc();
 
 // Fetch variants
 $variants = [];
-$variants_query = $conn->query("SELECT * FROM product_variants WHERE product_id = $product_id");
+// Include last stock change timestamp and last change amount per variant
+$variants_query = $conn->query("SELECT pv.*, 
+    (SELECT MAX(created_at) FROM stock_log sl WHERE sl.variant_id = pv.id) AS last_stock_update,
+    (SELECT sl2.change_amount FROM stock_log sl2 WHERE sl2.variant_id = pv.id ORDER BY sl2.created_at DESC LIMIT 1) AS last_change_amount
+    FROM product_variants pv WHERE product_id = $product_id");
 
 if ($variants_query) {
     while ($variant = $variants_query->fetch_assoc()) {
@@ -46,7 +50,9 @@ if ($variants_query) {
             'size' => $variant['size'],
             'stock' => $variant['stock'],
             'price_modifier' => $variant['price_modifier'],
-            'final_price' => $final_price
+            'final_price' => $final_price,
+            'last_stock_update' => $variant['last_stock_update'] ?? null,
+            'last_change_amount' => isset($variant['last_change_amount']) ? intval($variant['last_change_amount']) : null
         ];
     }
 }

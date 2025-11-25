@@ -536,6 +536,12 @@ if ($period === 'month' && $filter_month) {
       box-shadow: var(--shadow-light);
     }
 
+    /* Daily chart container styling (matches onsite_transaction) */
+    .daily-chart { margin:10px 0 20px; background:linear-gradient(145deg,#fff,#f8fbff); padding:14px; border-radius:12px; box-shadow:var(--shadow-light); }
+    .daily-chart h2 { margin:0 0 8px; font-size:1rem; color:var(--primary-blue); text-align:center; position:relative; }
+    .daily-chart h2::after { content: ''; position: absolute; bottom: -8px; left: 50%; transform: translateX(-50%); width: 60px; height: 6px; background: var(--accent-gold); border-radius: 4px; }
+    .daily-chart canvas { width:100%; height:220px; display:block; margin:0 auto; border-radius:8px; box-shadow: var(--shadow-light); }
+
     /* ==============================
        ENHANCED PAGINATION
     ============================== */
@@ -618,7 +624,7 @@ if ($period === 'month' && $filter_month) {
       border: none;
       font-size: 20px;
       cursor: pointer;
-      color: var(--primary-blue);
+      color: var(--primary-blu  e);
     }
 
     .modal table { width: 100%; border-collapse: collapse; margin-top:12px; }
@@ -783,9 +789,9 @@ if ($period === 'month' && $filter_month) {
         </div>
 
       <!-- DAILY SALES CHART -->
-      <div style="margin:10px 0 20px; background:linear-gradient(145deg,#fff,#f8fbff); padding:14px; border-radius:12px; box-shadow:var(--shadow-light);">
-        <h2 style="margin:0 0 8px; font-size:1rem; color:var(--primary-blue);">Last 30 Days — Daily Sales</h2>
-        <canvas id="dailySalesChart" style="width:100%; height:220px;"></canvas>
+      <div class="daily-chart">
+        <h2>Last 30 Days — Daily Sales</h2>
+        <canvas id="dailySalesChart"></canvas>
       </div>
       <table>
         <thead>
@@ -845,20 +851,192 @@ if ($period === 'month' && $filter_month) {
 
     <!-- Sales Summary removed per user request -->
     <!-- Purchased Products Modal -->
-    <div id="productsModal" class="modal" aria-hidden="true">
-      <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="productsModalTitle">
-        <button class="modal-close" id="productsModalClose" title="Close">✕</button>
-        <h3 id="productsModalTitle" style="margin:0 0 8px; color:var(--primary-blue);">Purchased Products</h3>
-        <div style="color:#6b7280; font-size:0.95rem;">Showing products for current filter selection.</div>
+    <style>
+      /* Products modal (enlarged for clearer display) */
+      .modal {
+        position: fixed;
+        inset: 0;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, rgba(15,23,42,0.55) 0%, rgba(15,23,42,0.72) 100%);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        z-index: 9999;
+        padding: 40px 80px; /* larger side padding to create roomy margins like the image */
+        box-sizing: border-box;
+        animation: modalBackdropFadeIn 0.36s ease;
+      }
+      .modal.show { display: flex; }
 
-        <table id="productsTable">
-          <thead>
-            <tr><th>Product Name</th><th style="width:120px; text-align:right;">Quantity</th></tr>
-          </thead>
-          <tbody>
-            <!-- populated by JS -->
-          </tbody>
-        </table>
+      @keyframes modalBackdropFadeIn {
+        from { opacity: 0; backdrop-filter: blur(0px); -webkit-backdrop-filter: blur(0px); }
+        to { opacity: 1; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+      }
+
+      .modal-box {
+        width: 980px; /* tuned to match screenshot proportion */
+        max-width: calc(100% - 160px);
+        background: #fff;
+        border-radius: 14px;
+        box-shadow: 0 18px 48px rgba(2,6,23,0.36);
+        overflow: hidden;
+        border: 6px solid rgba(255,255,255,0.95); /* subtle white frame like the image */
+        transform: translateY(10px) scale(.98);
+        opacity: 0;
+        transition: transform 360ms cubic-bezier(0.2,0.9,0.2,1), opacity 360ms ease;
+      }
+
+      .modal-header {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 40px 26px 32px; /* taller header like the image */
+        background: linear-gradient(90deg, #1e3a8a, #2b5fb0);
+        color: #fff;
+        position: relative;
+        border-radius: 12px 12px 0 0;
+        text-align: center;
+      }
+      .modal-header h3 { margin: 0; font-size: 1.5rem; font-weight: bold; line-height:1.02; }
+      .modal-header h3::after {
+        content: '';
+        position: absolute;
+        left: 50%;
+        transform: translateX(-50%);
+        bottom: -16px;
+        width: 100px; /* wider underline to match image */
+        height: 10px;
+        background: linear-gradient(45deg, #ffd700 0%, #ffeb3b 100%);
+        border-radius: 6px;
+        box-shadow: 0 6px 14px rgba(255, 215, 0, 0.30);
+      }
+      .modal-subtitle { color: rgba(255,255,255,0.95); font-size: 1rem; margin-top: 8px; }
+
+      .close-btn {
+        background: linear-gradient(180deg, #ff6b6b, #e74c3c);
+        color: #fff;
+        border: none;
+        height: 44px;
+        min-width: 120px;
+        padding: 0 20px;
+        border-radius: 999px;
+        font-weight: 800;
+        font-size: 0.95rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 10px 30px rgba(231,76,60,0.18), 0 0 0 6px rgba(231,76,60,0.06);
+        cursor: pointer;
+        transition: transform .12s ease, box-shadow .12s ease, opacity .12s ease;
+      }
+      .close-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 18px 46px rgba(231,76,60,0.22), 0 0 0 8px rgba(231,76,60,0.06);
+        transition: transform .12s ease, box-shadow .12s ease, opacity .12s ease;
+      }
+      .close-btn:focus {
+        outline: 3px solid rgba(231,76,60,0.14);
+        outline-offset: 3px;
+      }
+
+      .table-wrapper {
+        padding: 18px 20px;
+        max-height: 520px;
+        overflow: auto;
+        background: #fff;
+      }
+
+      /* Custom scrollbar to match products.css */
+      .table-wrapper::-webkit-scrollbar {
+        width: 10px;
+        height: 10px;
+      }
+      .table-wrapper::-webkit-scrollbar-track {
+        background: rgba(0, 64, 128, 0.05);
+        border-radius: 10px;
+      }
+      .table-wrapper::-webkit-scrollbar-thumb {
+        background: linear-gradient(135deg, var(--primary-blue), #0056b3);
+        border-radius: 10px;
+        box-shadow: inset 0 0 0 1px rgba(255,255,255,0.35);
+      }
+      .table-wrapper::-webkit-scrollbar-thumb:hover {
+        background: linear-gradient(135deg, #0056b3, var(--primary-blue));
+      }
+
+      /* Also apply to modal-box if it ever scrolls */
+      .modal-box::-webkit-scrollbar {
+        width: 10px;
+      }
+      .modal-box::-webkit-scrollbar-track {
+        background: rgba(0, 64, 128, 0.05);
+        border-radius: 10px;
+      }
+      .modal-box::-webkit-scrollbar-thumb {
+        background: linear-gradient(135deg, var(--primary-blue), #0056b3);
+        border-radius: 10px;
+      }
+      .modal-box::-webkit-scrollbar-thumb:hover {
+        background: linear-gradient(135deg, #0056b3, var(--primary-blue));
+      }
+      .products-table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      .products-table thead th {
+        text-align: left;
+        padding: 10px 12px;
+        font-size: 0.98rem;
+        color: #374151;
+        border-bottom: 1px solid #e6edf6;
+        background: #fbfdff;
+      }
+      .products-table tbody td {
+        padding: 12px; color: #111827; vertical-align: middle;
+        border-bottom: 1px solid #f3f4f6;
+      }
+
+      .modal-footer {
+        display: flex; justify-content: center; gap: 10px; padding: 24px 20px 32px; background: #fbfbfd; /* centered close like image */
+      }
+ 
+      .modal.show .modal-box {
+        transform: translateY(0) scale(1);
+        opacity: 1;
+      }
+      .modal.closing .modal-box {
+        transform: translateY(12px) scale(.98);
+        opacity: 0;
+      }
+    </style>
+
+    <div id="productsModal" class="modal" aria-hidden="true">
+      <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="productsModalTitle">
+        <div class="modal-header">
+          <div>
+            <h3 id="productsModalTitle">Purchased Products</h3>
+          </div>
+          <button id="productsModalClose" class="modal-close" aria-label="Close purchased products">×</button>
+        </div>
+
+        <div class="table-wrapper">
+          <table id="productsTable" class="products-table">
+            <thead>
+              <tr>
+                <th>Product Name</th>
+                <th style="width:120px; text-align:right;">Quantity</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- populated by JS -->
+            </tbody>
+          </table>
+        </div>
+
+        <div class="modal-footer">
+          <button class="close-btn footer-close">Close</button>
+        </div>
       </div>
     </div>
   </div>
@@ -1101,10 +1279,30 @@ if ($period === 'month' && $filter_month) {
               data: values,
               backgroundColor: barColors,
               borderColor: borderColors,
-              borderWidth: 1
+              borderWidth: 1,
+              maxBarThickness: 48,
+              barPercentage: 0.7,
+              categoryPercentage: 0.9
             }]
           },
-          options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } }, plugins: { legend: { display: false } } }
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: 'nearest', intersect: false },
+            scales: { y: { beginAtZero: true } },
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                enabled: true,
+                callbacks: {
+                  label: function(context) {
+                    var v = context.parsed && context.parsed.y !== undefined ? context.parsed.y : context.parsed;
+                    return '₱' + Number(v).toLocaleString(undefined, { minimumFractionDigits: 2 });
+                  }
+                }
+              }
+            }
+          }
         });
       }
 
@@ -1145,17 +1343,31 @@ if ($period === 'month' && $filter_month) {
             });
           }
 
+          // clear any lingering closing state then show
+          modal.classList.remove('closing');
           modal.classList.add('show');
           modal.setAttribute('aria-hidden', 'false');
+          // focus the close button for keyboard users
+          const focusTarget = modal.querySelector('.footer-close') || modal.querySelector('#productsModalClose');
+          if (focusTarget && typeof focusTarget.focus === 'function') focusTarget.focus();
         }
 
         function closeProductsModal() {
-          modal.classList.remove('show');
+          if (!modal.classList.contains('show') || modal.classList.contains('closing')) return;
+          // start closing animation
+          modal.classList.add('closing');
           modal.setAttribute('aria-hidden', 'true');
+          // wait for animation to finish before removing show
+          setTimeout(() => {
+            modal.classList.remove('show');
+            modal.classList.remove('closing');
+          }, 360);
         }
 
         if (viewBtn) viewBtn.addEventListener('click', openProductsModal);
         if (modalClose) modalClose.addEventListener('click', closeProductsModal);
+        const footerCloseBtn = document.querySelector('.footer-close');
+        if (footerCloseBtn) footerCloseBtn.addEventListener('click', closeProductsModal);
         // close when clicking outside content
         if (modal) modal.addEventListener('click', (e) => { if (e.target === modal) closeProductsModal(); });
         // close with Esc

@@ -212,29 +212,31 @@ tbody tr:hover {
 }
 
 .void-confirm-btn {
-  background: linear-gradient(45deg, #e74c3c, #c0392b);
-  color: white;
+  /* Match the red pill + glow design used by modal close buttons */
+  background: linear-gradient(180deg, #ff6b6b, #e74c3c);
+  color: #fff;
   border: none;
-  padding: 12px 24px;
-  border-radius: 25px;
+  padding: 12px 28px;
+  border-radius: 28px;
+  font-weight: 700;
+  box-shadow: 0 10px 30px rgba(231,76,60,0.18), 0 0 0 6px rgba(231,76,60,0.06);
   cursor: pointer;
-  font-size: 0.9rem;
-  font-weight: 600;
-  transition: var(--transition);
-  box-shadow: 0 2px 8px rgba(231, 76, 60, 0.3);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  transition: transform .12s ease, box-shadow .12s ease, opacity .12s ease;
+  letter-spacing: 0.6px;
+  font-size: 0.95rem;
 }
 
 .void-confirm-btn:hover {
-  background: linear-gradient(45deg, #c0392b, #a93226);
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(231, 76, 60, 0.4);
+  box-shadow: 0 18px 44px rgba(231,76,60,0.22), 0 0 0 8px rgba(231,76,60,0.06);
 }
 
-/* ==============================
-   ENHANCED SUCCESS MESSAGE & PAGINATION
-============================== */
+.void-confirm-btn:focus {
+  outline: 3px solid rgba(231,76,60,0.14);
+  outline-offset: 3px;
+}
+
+
 .success-message {
   background: linear-gradient(45deg, var(--success-green), #2ecc71);
   color: white;
@@ -311,36 +313,6 @@ tbody tr:hover {
   font-size: 1.3rem;
 }
 
-/* ==============================
-   ENHANCED MODAL DESIGN
-============================== */
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(135deg, rgba(0, 64, 128, 0.8) 0%, rgba(0, 86, 179, 0.9) 100%);
-  backdrop-filter: blur(10px);
-  display: none;
-  justify-content: center;
-  align-items: center;
-  z-index: 10000;
-  animation: modalBackdropFadeIn 0.4s ease;
-  padding: 50px;
-  box-sizing: border-box;
-}
-
-@keyframes modalBackdropFadeIn {
-  from { 
-    opacity: 0; 
-    backdrop-filter: blur(0px);
-  }
-  to { 
-    opacity: 1; 
-    backdrop-filter: blur(10px);
-  }
-}
 
 .modal-box {
   background: linear-gradient(145deg, #ffffff 0%, #f8faff 100%);
@@ -351,7 +323,7 @@ tbody tr:hover {
   max-height: calc(100vh - 60px);
   overflow: hidden;
   box-shadow: var(--shadow-heavy);
-  border: 2px solid rgba(255, 255, 255, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.6);
   animation: modalSlideIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   position: relative;
   display: flex;
@@ -365,9 +337,9 @@ tbody tr:hover {
   right: 0;
   bottom: 0;
   background: 
-    radial-gradient(circle at 20% 20%, rgba(30, 60, 114, 0.02) 0%, transparent 50%),
-    radial-gradient(circle at 80% 80%, rgba(42, 82, 152, 0.02) 0%, transparent 50%),
-    linear-gradient(145deg, transparent 0%, rgba(255, 204, 0, 0.01) 100%);
+    radial-gradient(circle at 20% 20%, rgba(30, 60, 114, 0.008) 0%, transparent 50%),
+    radial-gradient(circle at 80% 80%, rgba(42, 82, 152, 0.008) 0%, transparent 50%),
+    linear-gradient(145deg, transparent 0%, rgba(255, 204, 0, 0.006) 100%);
   pointer-events: none;
   z-index: 1;
   border-radius: var(--border-radius);
@@ -393,8 +365,8 @@ tbody tr:hover {
   background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
   color: white !important;
   margin: 0;
-  padding: 30px 40px 35px;
-  font-size: 1.2rem;
+  padding: 26px 36px 30px;
+  font-size: 1.05rem;
   font-weight: 700;
   text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.3);
   position: relative;
@@ -411,6 +383,20 @@ tbody tr:hover {
   gap: 10px;
 }
 
+/* Dedicated modal header to ensure full visibility above modal pseudo-elements */
+.modal-header {
+  position: relative;
+  z-index: 3; /* sit above the .modal-box::before layer (z-index:1) */
+  background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+  padding: 28px 36px 26px;
+  border-radius: 12px 12px 0 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+.modal-header h3 { margin: 0; color: #fff; font-size: 1rem; font-weight:700; }
+
 .modal-box h3::before {
   content: '';
   display: none;
@@ -422,14 +408,13 @@ tbody tr:hover {
   bottom: 0;
   left: 50%;
   transform: translateX(-50%);
-  width: 80px;
+  width: 72px;
   height: 3px;
   background: linear-gradient(45deg, #ffd700 0%, #ffeb3b 100%);
   border-radius: 2px;
   box-shadow: 0 1px 3px rgba(255, 215, 0, 0.5);
 }
 
-/* Desktop Modal Content Styling */
 @media (min-width: 769px) {
   .modal-overlay {
     padding: 50px !important;
@@ -445,8 +430,8 @@ tbody tr:hover {
   }
   
   .modal-box h3 {
-    padding: 32px 45px 38px !important;
-  }
+      padding: 28px 40px 32px !important;
+    }
   
   .modal-footer {
     padding: 28px !important;
@@ -456,8 +441,8 @@ tbody tr:hover {
   }
   
   .close-btn {
-    padding: 12px 24px !important;
-    font-size: 0.9rem !important;
+    padding: 12px 22px !important;
+    font-size: 0.95rem !important;
     border-radius: 25px !important;
     gap: 6px !important;
   }
@@ -470,7 +455,7 @@ tbody tr:hover {
 .modal-content {
   flex: 1;
   overflow: hidden;
-  padding: 0;
+  padding: 18px 0 0;
   min-height: auto;
   background: #ffffff;
   position: relative;
@@ -494,48 +479,47 @@ tbody tr:hover {
   border: none;
 }
 
-.modal-content table th {
+  .modal-content table th {
+  /* Ensure modal table headers are not sticky and sit inside the modal flow */
   background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
   color: white;
-  padding: 20px 35px;
-  font-size: 0.95rem;
+  padding: 12px 22px; /* slightly reduced padding for better fit */
+  font-size: 0.85rem;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.8px;
+  letter-spacing: 0.7px;
   border: none;
-  position: relative;
-}
-
-.modal-content table th::after {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background: linear-gradient(45deg, #ffd700 0%, #ffeb3b 100%);
+  position: static !important; /* override any global sticky behavior */
+  top: auto !important;
+  z-index: 2; /* keep above table rows */
+  display: table-cell;
+  box-shadow: none;
 }
 
 .modal-content table td {
-  padding: 20px 35px;
+  padding: 14px 22px; /* match th horizontal padding for alignment */
   border-bottom: 1px solid rgba(30, 60, 114, 0.08);
-  font-size: 1rem;
+  font-size: 0.95rem;
   color: var(--text-dark);
   background: #ffffff;
   transition: all 0.2s ease;
   border-left: none;
   border-right: none;
+  position: relative;
+  z-index: 1;
 }
 
 .modal-content table tbody tr:nth-child(even) td {
   background: rgba(30, 60, 114, 0.02);
 }
 
+/* Disable hover highlight/shift inside modal tables to avoid visual jump */
 .modal-content table tbody tr:hover td {
-  background: linear-gradient(135deg, rgba(30, 60, 114, 0.08) 0%, rgba(42, 82, 152, 0.05) 100%);
-  transform: translateX(2px);
-  box-shadow: inset 3px 0 0 rgba(30, 60, 114, 0.3);
+  background: inherit !important;
+  transform: none !important;
+  box-shadow: none !important;
 }
+
 
 .modal-content table tbody tr:last-child td {
   border-bottom: none;
@@ -561,7 +545,6 @@ tbody tr:hover {
 
 
 
-/* Modal Footer - Clean Layout v2.6 */
 .modal-footer {
   flex-shrink: 0;
   padding: 28px;
@@ -575,112 +558,6 @@ tbody tr:hover {
   width: 100%;
 }
 
-/* Close Button Compact Design v2.4 - CENTERED WITH TOP GAP */
-.close-btn {
-  background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
-  color: white;
-  border: none;
-  border-radius: 25px;
-  padding: 12px 24px;
-  cursor: pointer;
-  font-size: 0.9rem;
-  font-weight: 600;
-  transition: var(--transition);
-  box-shadow: 0 2px 8px rgba(231, 76, 60, 0.3);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  margin: 0;
-  position: relative;
-  overflow: hidden;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-}
-
-.close-btn::after {
-  content: '✕';
-  font-size: 0.9rem;
-  font-weight: bold;
-}
-
-.close-btn::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
-  transition: left 0.5s;
-}
-
-.close-btn:hover {
-  background: linear-gradient(135deg, #c0392b 0%, #a93226 100%);
-  transform: translateY(-2px) scale(1.02);
-  box-shadow: 0 6px 20px rgba(231, 76, 60, 0.4);
-}
-
-.close-btn:hover::before {
-  left: 100%;
-}
-
-/* ==============================
-   ENHANCED CHART CONTAINER
-============================== */
-.chart-container {
-  background: linear-gradient(145deg, #ffffff 0%, #f8faff 100%);
-  padding: 25px;
-  border-radius: var(--border-radius);
-  box-shadow: var(--shadow-medium);
-  border: 1px solid rgba(255, 255, 255, 0.8);
-  flex: 0 0 450px;
-  min-height: 400px;
-  display: flex;
-  flex-direction: column;
-  align-self: flex-start;
-  margin-top: 150px;
-}
-
-.chart-container h3 {
-  margin-bottom: 15px;
-  text-align: center;
-}
-
-.chart-container p {
-  text-align: center;
-  font-size: 1.1rem;
-  margin-bottom: 20px;
-  color: var(--text-dark);
-}
-
-.chart-container strong {
-  color: var(--success-green);
-  font-size: 1.3rem;
-}
-
-#salesChart {
-  width: 100% !important;
-  height: 320px !important;
-  flex: 1;
-}
-
-/* ==============================
-   TABLE AND CHART LAYOUT
-============================== */
-.left-content {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-}
-
-.table-container {
-  flex: 1;
-}
-
-/* ==============================
-   RESPONSIVE DESIGN
-============================== */
 @media (max-width: 1400px) {
   .container {
     flex-direction: column;
@@ -751,18 +628,18 @@ tbody tr:hover {
   }
   
   .modal-content table th {
-    padding: 18px 28px;
-    font-size: 0.9rem;
+    padding: 16px 22px;
+    font-size: 0.85rem;
   }
   
   .modal-content table td {
-    padding: 18px 28px;
-    font-size: 0.9rem;
+    padding: 14px 22px;
+    font-size: 0.85rem;
   }
   
   .close-btn {
-    padding: 12px 24px;
-    font-size: 0.9rem;
+    padding: 12px 22px;
+    font-size: 0.95rem;
     gap: 6px;
   }
   
@@ -780,9 +657,7 @@ tbody tr:hover {
   }
 }
 
-/* ==============================
-   LOADING STATES & ANIMATIONS
-============================== */
+
 @keyframes shimmer {
   0% {
     background-position: -200px 0;
@@ -790,6 +665,31 @@ tbody tr:hover {
   100% {
     background-position: calc(200px + 100%) 0;
   }
+}
+
+#itemsModal .close-btn,
+#voidModal .close-btn {
+  background: linear-gradient(180deg, #ff6b6b, #e74c3c);
+  color: #fff;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 28px;
+  font-weight: 700;
+  box-shadow: 0 8px 28px rgba(231,76,60,0.18), 0 0 0 6px rgba(231,76,60,0.06);
+  cursor: pointer;
+  transition: transform .12s ease, box-shadow .12s ease, opacity .12s ease;
+}
+
+#itemsModal .close-btn:hover,
+#voidModal .close-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 40px rgba(231,76,60,0.22), 0 0 0 8px rgba(231,76,60,0.06);
+}
+
+#itemsModal .close-btn:focus,
+#voidModal .close-btn:focus {
+  outline: 3px solid rgba(231,76,60,0.14);
+  outline-offset: 3px;
 }
 
 .modal-loading {
@@ -813,9 +713,7 @@ tbody tr:hover {
   display: none;
 }
 
-/* ==============================
-   VOID MODAL CUSTOM STYLES
-============================== */
+
 .void-modal-content {
   padding: 40px 45px !important;
 }
@@ -839,6 +737,8 @@ tbody tr:hover {
 .void-reason-container {
   margin-bottom: 30px;
 }
+
+
 
 .void-label {
   display: block;
