@@ -252,15 +252,28 @@ if ($period === 'month' && $filter_month) {
   }
 }
 
-// Most purchased product (onsite)
+// Most purchased product (onsite) — use products_ko.name as fallback when ti.product_name is empty
 $most_product = ['product_name' => '—', 'total_qty' => 0];
-$mp_q = "SELECT ti.product_name, SUM(ti.quantity) AS total_qty FROM transaction_items ti JOIN transactions t ON ti.transaction_id = t.transaction_id " . $where . " GROUP BY ti.product_id, ti.product_name ORDER BY total_qty DESC LIMIT 1";
+$mp_q = "SELECT COALESCE(ti.product_name, p.name) AS product_name, SUM(ti.quantity) AS total_qty
+  FROM transaction_items ti
+  JOIN transactions t ON ti.transaction_id = t.transaction_id
+  LEFT JOIN products_ko p ON ti.product_id = p.id
+  " . $where . "
+  GROUP BY ti.product_id, product_name
+  ORDER BY total_qty DESC
+  LIMIT 1";
 $mp_res = $conn->query($mp_q);
 if ($mp_res && $mp_res->num_rows > 0) $most_product = $mp_res->fetch_assoc();
 
-// Aggregated purchased products for modal
+// Aggregated purchased products for modal — same approach, ensure name comes from products table when needed
 $purchased_products = [];
-$pp_q = "SELECT ti.product_name, SUM(ti.quantity) AS total_qty FROM transaction_items ti JOIN transactions t ON ti.transaction_id = t.transaction_id " . $where . " GROUP BY ti.product_id, ti.product_name ORDER BY total_qty DESC";
+$pp_q = "SELECT COALESCE(ti.product_name, p.name) AS product_name, SUM(ti.quantity) AS total_qty
+  FROM transaction_items ti
+  JOIN transactions t ON ti.transaction_id = t.transaction_id
+  LEFT JOIN products_ko p ON ti.product_id = p.id
+  " . $where . "
+  GROUP BY ti.product_id, product_name
+  ORDER BY total_qty DESC";
 $pp_res = $conn->query($pp_q);
 if ($pp_res) while ($r = $pp_res->fetch_assoc()) $purchased_products[] = $r;
 
@@ -331,18 +344,19 @@ body {
 }
 
   .container {
-  max-width: 100%;
-  width: calc(100% - 40px);
-  margin: 10px auto;
+  max-width: 97%;
+  width: calc(100% - 120px);
+  margin: 30px auto;
   background: linear-gradient(145deg, #ffffff 0%, #f8faff 100%);
-  padding: 20px;
+  padding: 30px;
   border-radius: var(--border-radius);
   box-shadow: var(--shadow-heavy);
-  min-height: 90vh;
+  min-height: 80vh;
   display: block;
   border: 1px solid rgba(255, 255, 255, 0.8);
   position: relative;
 }
+
 
 .container::before {
   content: '';
@@ -369,6 +383,14 @@ h2, h3 {
   background-clip: text;
   -webkit-text-fill-color: transparent;
   position: relative;
+}
+
+/* Center the main page heading inside transactions section */
+#transactionsPage h1 {
+  text-align: center;
+  margin-bottom: 18px;
+  color: var(--primary-blue);
+  font-weight: 700;
 }
 
 h2 {
@@ -431,6 +453,47 @@ h3 {
   left: 100%;
 }
 
+.filter-btn {
+  background: linear-gradient(45deg, var(--secondary-blue), #0080ff);
+  color: white;
+  padding: 12px 20px;
+  border-radius: 25px;
+  display: inline-block;
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin-bottom: 25px;
+  transition: var(--transition);
+  box-shadow: 0 4px 15px rgba(0, 102, 204, 0.3);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  position: relative;
+  overflow: hidden;
+}
+
+.filter-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 204, 0, 0.3), transparent);
+  transition: left 0.5s;
+}
+
+.filter-btn:hover {
+  background: linear-gradient(45deg, #0080ff, var(--secondary-blue));
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 102, 204, 0.4);
+  text-decoration: none;
+  color: white;
+}
+
+.filter-btn:hover::before {
+  left: 100%;
+}
+
 /* Top buttons container (Back / Download) */
 .top-buttons {
   display:flex;
@@ -447,33 +510,100 @@ h3 {
 .filter-label { font-weight:600; color:var(--primary-blue); }
 .filter-input { padding:8px 10px; border-radius:8px; border:1px solid #e0e6f0; }
 .filter-input[type="number"] { width:100px; }
-.filter-btn { padding:8px 12px; border-radius:12px; min-width:120px; display:inline-block; text-align:center; font-weight:600; background:linear-gradient(45deg,#0077dd,#0090ff); color:#fff; border:none; cursor:pointer; }
+.filter-btn { padding:8px 12px; border-radius:12px; min-width:120px; display:inline-block; text-align:center; font-weight:600; background:linear-gradient(45deg,#0077dd,#0090ff); color:#fff; border:none; cursor:pointer; margin-bottom:0; }
 
-/* KPI cards */
-.kpi-cards { display:flex; gap:18px; margin:18px 0 6px; flex-wrap:wrap; }
-.kpi-card { flex:1 1 160px; background:#fff; padding:16px; border-radius:12px; box-shadow:var(--shadow-light); text-align:left; }
-.kpi-card.wide { flex:1 1 220px; }
-.kpi-value.large { font-size:16px; }
+/* KPI cards - enhanced layout to match system style */
+.kpi-cards {
+  display: flex;
+  gap: 18px;
+  margin: 18px 0 16px;
+  flex-wrap: wrap;
+  align-items: stretch;
+}
+.kpi-card {
+  flex: 1 1 200px;
+  background: #fff;
+  padding: 18px 20px;
+  border-radius: 12px;
+  box-shadow: var(--shadow-light);
+  text-align: left;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 100px;
+}
+.kpi-card.wide { flex: 1 1 260px; }
+.kpi-left { display: flex; flex-direction: column; gap: 6px; }
+.kpi-title { font-size: 13px; color: #6b7280; margin: 0; }
+.kpi-value { font-weight: 800; font-size: 20px; margin: 0; color: var(--text-dark); }
+.kpi-value.large { font-size: 22px; }
 .kpi-value.success { color: var(--success-green); }
 .kpi-value.primary { color: var(--primary-blue); }
 
-.kpi-card .kpi-title { font-size:12px; color:#6b7280; }
-.kpi-card .kpi-value { font-weight:700; font-size:18px; margin-top:6px; }
-.kpi-card .kpi-action { display:inline-block; padding:6px 10px; font-size:0.85rem; border-radius:8px; background:transparent; color:var(--primary-blue); border:1px solid rgba(0,64,128,0.06); }
+/* Right area for small helper text / action */
+.kpi-right { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
+.kpi-card .kpi-action {
+  display: inline-block;
+  padding: 6px 10px;
+  font-size: 0.85rem;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--primary-blue);
+  border: 1px solid rgba(0,64,128,0.06);
+  cursor: pointer;
+}
+.kpi-card .kpi-action:hover { background: var(--secondary-blue); color: #fff; border-color: rgba(0,64,128,0.18); box-shadow: 0 6px 18px rgba(0,102,204,0.12); }
 
-/* Daily chart container */
-.daily-chart { margin:18px auto 24px; background:linear-gradient(145deg,#fff,#f8fbff); padding:22px 26px; border-radius:12px; box-shadow:var(--shadow-light); max-width:1100px; }
-.daily-chart h2 { margin:0 0 8px; font-size:1rem; color:var(--primary-blue); text-align:center; }
-.daily-chart canvas { width:100%; max-width:100%; margin:12px auto 0; display:block; }
+/* Make KPI cards stack nicely on narrow screens */
+@media (max-width: 720px) {
+  .kpi-card { flex-direction: column; align-items: flex-start; min-height: auto; }
+  .kpi-right { align-items: flex-start; width: 100%; }
+  .kpi-card .kpi-action { align-self: flex-start; }
+}
+/* Daily chart container - make chart a bit smaller and centered like reference */
+  .daily-chart { margin:18px auto 24px; background:linear-gradient(145deg,#fff,#f8fbff); padding:18px 22px; border-radius:12px; box-shadow:var(--shadow-light); max-width:1100px; }
+  .daily-chart h2 { margin:0 0 8px; font-size:1rem; color:var(--primary-blue); text-align:center; }
+  .daily-chart .chart-inner { display:flex; justify-content:center; }
+  .daily-chart canvas { width:100%; max-width:900px; margin:12px auto 0; display:block; border-radius:8px; box-shadow: 0 8px 20px rgba(0,0,0,0.06); }
 
-/* Larger, centered daily sales canvas sizing to match reference */
-#dailySalesChart { width:100% !important; height:360px !important; max-width:100%; display:block; }
+/* Daily sales canvas sizing adjusted to be smaller than before and centered */
+#dailySalesChart { width:100% !important; height:260px !important; max-width:900px; display:block; margin: 0 auto; }
 
 /* Actions wrapper for filter buttons */
 .filter-actions { display:inline-flex; gap:8px; align-items:center; }
 
+/* Normalize filter controls: ensure anchors and buttons match size */
+.filter-actions .filter-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 20px !important;
+  min-width: 120px;
+  height: 30px;
+  box-sizing: border-box;
+  text-decoration: none;
+}
+
+/* Make filter inputs match button height for alignment */
+.filter-form .filter-input,
+.filter-form select.filter-input {
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+}
+
 /* Page info */
 .page-info { color:var(--text-dark); margin:0 12px; }
+/* Modal styles (overlay and box for items/void) */
+.modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); align-items: center; justify-content: center; z-index: 9999; }
+.modal-overlay .modal-box { background: #fff; border-radius: 10px; padding: 18px; max-width: 92%; width: 640px; box-shadow: 0 12px 30px rgba(0,0,0,0.15); }
+.modal-box .modal-footer { margin-top: 12px; text-align: right; }
+.modal-box .close-btn { background: #e9eef7; border: none; color: #004080; padding: 8px 12px; border-radius: 8px; cursor: pointer; }
+
+/* Products modal: ensure close X is clickable and positioned above content */
+#productsModal > div { position: relative; }
+#productsModal #productsModalClose { position: absolute; top: 12px; right: 12px; z-index: 11000; background: transparent; border: none; font-size: 22px; color: #0b4777; cursor: pointer; }
 </style>
 </head>
 <body>
@@ -522,7 +652,6 @@ h3 {
           <div class="kpi-value large"><?= htmlspecialchars($most_product['product_name']) ?></div>
           <button id="viewProductsBtn" class="kpi-action">View All</button>
         </div>
-        <div style="color:#6b7280; margin-top:6px;">Quantity: <?= number_format($most_product['total_qty']) ?></div>
       </div>
 
       <div class="kpi-card">
@@ -697,6 +826,26 @@ document.querySelectorAll(".view-items").forEach(btn => {
 });
 function closeModal(){ document.getElementById("itemsModal").style.display = "none"; }
 
+// Make items modal dismissible by background click, close button, and Escape key
+(function(){
+  const itemsModal = document.getElementById('itemsModal');
+  if (!itemsModal) return;
+
+  // Close when clicking outside the modal box
+  itemsModal.addEventListener('click', function(e){
+    if (e.target === itemsModal) closeModal();
+  });
+
+  // Wire close buttons inside the items modal
+  const closeBtns = itemsModal.querySelectorAll('.close-btn');
+  closeBtns.forEach(b => b.addEventListener('click', function(ev){ ev.preventDefault(); closeModal(); }));
+
+  // Close on Escape when modal is open
+  document.addEventListener('keydown', function(ev){
+    if (ev.key === 'Escape' && itemsModal.style.display === 'flex') closeModal();
+  });
+})();
+
 function openVoidModal(transactionId) {
   document.getElementById('voidTransactionId').value = transactionId;
   document.getElementById('voidModal').style.display = 'flex';
@@ -762,6 +911,22 @@ document.addEventListener('DOMContentLoaded', function() {
   if (modalClose) modalClose.addEventListener('click', closeProductsModal);
   if (modal) modal.addEventListener('click', (e) => { if (e.target === modal) closeProductsModal(); });
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeProductsModal(); });
+
+  // Extra safety: ensure products modal close works even if styles/stacking change
+  (function(){
+    const prodModal = document.getElementById('productsModal');
+    const prodClose = document.getElementById('productsModalClose');
+    if (!prodModal) return;
+
+    // Close when clicking the backdrop
+    prodModal.addEventListener('click', function(ev){ if (ev.target === prodModal) prodModal.style.display = 'none'; });
+
+    // Close when clicking the X button
+    if (prodClose) prodClose.addEventListener('click', function(ev){ ev.preventDefault(); prodModal.style.display = 'none'; });
+
+    // Close on Escape
+    document.addEventListener('keydown', function(ev){ if (ev.key === 'Escape' && prodModal.style.display === 'flex') prodModal.style.display = 'none'; });
+  })();
 
   // Download PDF (simple export based on $all_transactions)
   const downloadBtn = document.getElementById('downloadPDF');

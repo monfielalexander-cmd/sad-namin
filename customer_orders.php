@@ -325,7 +325,81 @@ if ($period === 'month' && $filter_month) {
       font-size: 0.9rem;
       line-height: 1;
     }
-
+    .view-btn {
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:6px 10px;
+      font-size:0.85rem;
+      border-radius:8px;
+      background:#ffffff;
+      color:var(--primary-blue);
+      border:1px solid rgba(0,64,128,0.12);
+      box-shadow: 0 4px 12px rgba(0,64,128,0.04);
+      text-decoration: none;
+      cursor: pointer;
+    }
+    .view-btn:hover {
+      background: var(--secondary-blue);
+      color: #fff;
+      border-color: rgba(0,64,128,0.18);
+      box-shadow: 0 6px 18px rgba(0,102,204,0.12);
+    }
+    /* KPI cards - shared styles copied from onsite_transaction.php */
+    .kpi-cards {
+      display: flex;
+      gap: 18px;
+      margin: 18px 0 16px;
+      flex-wrap: wrap;
+      align-items: stretch;
+    }
+    .kpi-card {
+      flex: 1 1 220px;
+      background: #fff;
+      padding: 14px 18px;
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(2,48,90,0.06);
+      text-align: left;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 84px;
+    }
+    .kpi-card.wide { flex: 1 1 260px; }
+    .kpi-left { display: flex; flex-direction: column; gap: 6px; align-items:flex-start; }
+    .kpi-title { font-size: 13px; color: #6b7280; margin: 0; }
+    .kpi-value { font-weight: 900; font-size: 15px; margin: 0; color: var(--text-dark); }
+    .kpi-value.large { font-size: 20px; }
+    .kpi-value.success { color: var(--success-green); }
+    .kpi-value.primary { color: var(--primary-blue); }
+    .kpi-right { display: flex; flex-direction: column; align-items:flex-end; gap: 6px; min-width:120px; }
+    .kpi-value { text-align: right; }
+    /* Make the wide KPI (Most Purchased) show value and action inline on the right */
+    .kpi-card.wide .kpi-right { flex-direction: row; align-items: center; justify-content: flex-end; gap: 10px; }
+    .kpi-card.wide .kpi-value { margin: 0; white-space: nowrap; }
+    .kpi-card.wide .view-btn { margin-left: 6px; }
+    .kpi-card .kpi-action {
+      display: inline-flex;
+      align-items: center;
+      padding: 6px 10px;
+      font-size: 0.85rem;
+      border-radius: 8px;
+      background: #fff;
+      color: var(--primary-blue);
+      border: 1px solid rgba(0,64,128,0.12);
+      box-shadow: 0 4px 12px rgba(0,64,128,0.04);
+      cursor: pointer;
+    }
+    .kpi-card .kpi-action:hover { background: var(--secondary-blue); color: #fff; border-color: rgba(0,64,128,0.18); box-shadow: 0 6px 18px rgba(0,102,204,0.12); }
+    @media (max-width: 720px) {
+      .kpi-card { flex-direction: column; align-items: flex-start; min-height: auto; }
+      .kpi-right { align-items: flex-start; width: 100%; }
+      /* ensure wide card stacks nicely on small screens */
+      .kpi-card.wide { flex-direction: column; align-items: flex-start; }
+      .kpi-card.wide .kpi-right { flex-direction: column; align-items: flex-start; width: 100%; }
+      .kpi-card .kpi-action { align-self: flex-start; }
+    }
     .back-btn::before, .download-btn::before {
       content: '';
       position: absolute;
@@ -669,28 +743,44 @@ if ($period === 'month' && $filter_month) {
       </script>
 
       <!-- KPI CARDS -->
-      <div style="display:flex; gap:18px; margin: 18px 0 6px; flex-wrap:wrap;">
-        <div style="flex:1 1 220px; background:#fff; padding:16px; border-radius:12px; box-shadow:var(--shadow-light); text-align:left;">
-          <div style="font-size:12px; color:#6b7280;">Most Purchased</div>
-          <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-top:6px;">
-            <div style="font-weight:700; font-size:16px;"><?= htmlspecialchars($most_product['product_name']) ?></div>
-            <button id="viewProductsBtn" class="filter-btn" style="padding:6px 10px; font-size:0.85rem; white-space:nowrap;">View All</button>
+        <div class="kpi-cards">
+          <div class="kpi-card wide">
+            <div class="kpi-left">
+              <p class="kpi-title">Most Purchased</p>
+            </div>
+            <div class="kpi-right">
+              <p class="kpi-value"><?= htmlspecialchars($most_product['product_name'] ?? '—') ?></p>
+              <button id="viewProductsBtn" class="kpi-action view-btn">View All</button>
+            </div>
           </div>
-          <div style="color:#6b7280; margin-top:6px;">Quantity: <?= number_format($most_product['total_qty']) ?></div>
+
+          <div class="kpi-card">
+            <div class="kpi-left">
+              <p class="kpi-title">Total (Filtered)</p>
+            </div>
+            <div class="kpi-right">
+              <p class="kpi-value success">₱<?= number_format($filtered_total,2) ?></p>
+            </div>
+          </div>
+
+          <div class="kpi-card">
+            <div class="kpi-left">
+              <p class="kpi-title">Sales This Month</p>
+            </div>
+            <div class="kpi-right">
+              <p class="kpi-value primary">₱<?= number_format($sales_month,2) ?></p>
+            </div>
+          </div>
+
+          <div class="kpi-card">
+            <div class="kpi-left">
+              <p class="kpi-title">Sales This Year</p>
+            </div>
+            <div class="kpi-right">
+              <p class="kpi-value primary">₱<?= number_format($sales_year,2) ?></p>
+            </div>
+          </div>
         </div>
-        <div style="flex:1 1 160px; background:#fff; padding:16px; border-radius:12px; box-shadow:var(--shadow-light); text-align:left;">
-          <div style="font-size:12px; color:#6b7280;">Total (Filtered)</div>
-          <div style="font-weight:700; font-size:18px; margin-top:6px; color:var(--success-green);">₱<?= number_format($filtered_total,2) ?></div>
-        </div>
-        <div style="flex:1 1 160px; background:#fff; padding:16px; border-radius:12px; box-shadow:var(--shadow-light); text-align:left;">
-          <div style="font-size:12px; color:#6b7280;">Sales This Month</div>
-          <div style="font-weight:700; font-size:18px; margin-top:6px; color:var(--primary-blue);">₱<?= number_format($sales_month,2) ?></div>
-        </div>
-        <div style="flex:1 1 160px; background:#fff; padding:16px; border-radius:12px; box-shadow:var(--shadow-light); text-align:left;">
-          <div style="font-size:12px; color:#6b7280;">Sales This Year</div>
-          <div style="font-weight:700; font-size:18px; margin-top:6px; color:#004080;">₱<?= number_format($sales_year,2) ?></div>
-        </div>
-      </div>
 
       <!-- DAILY SALES CHART -->
       <div style="margin:10px 0 20px; background:linear-gradient(145deg,#fff,#f8fbff); padding:14px; border-radius:12px; box-shadow:var(--shadow-light);">
