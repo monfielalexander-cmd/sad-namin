@@ -136,7 +136,6 @@ h3 {
 .back-btn:hover::before {
   left: 100%;
 }
-
 /* ==============================
    ENHANCED TABLE STYLING
 ============================== */
@@ -378,7 +377,6 @@ tbody tr:hover {
   display: flex;
   flex-direction: column;
 }
-
 .modal-box::before {
   content: '';
   position: absolute;

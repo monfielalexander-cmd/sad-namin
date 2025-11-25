@@ -12,17 +12,44 @@ $records_per_page = 10;
 $current_page = isset($_GET['page']) ? intval($_GET['page']) : 1;
 $offset = ($current_page - 1) * $records_per_page;
 
-// Get total records for online transactions only
-$total_records_query = "SELECT COUNT(*) as total FROM transactions WHERE source = 'online'";
+// Filter params (period: day|month|year|all)
+$period = isset($_GET['period']) ? $_GET['period'] : 'all';
+$filter_date = isset($_GET['date']) ? mysqli_real_escape_string($conn, $_GET['date']) : '';
+$filter_month = isset($_GET['month']) ? mysqli_real_escape_string($conn, $_GET['month']) : '';
+$filter_year = isset($_GET['year']) ? mysqli_real_escape_string($conn, $_GET['year']) : '';
+
+// Build WHERE clause for filtered queries (always limit to online source for this page)
+$where_base = "WHERE source='online'";
+if ($period === 'day' && $filter_date) {
+  $where_filter = " AND DATE(transaction_date) = '" . $filter_date . "'";
+} elseif ($period === 'month' && $filter_month) {
+  // expected format YYYY-MM
+  $parts = explode('-', $filter_month);
+  if (count($parts) === 2) {
+    $y = intval($parts[0]);
+    $m = intval($parts[1]);
+    $where_filter = " AND YEAR(transaction_date) = $y AND MONTH(transaction_date) = $m";
+  } else {
+    $where_filter = '';
+  }
+} elseif ($period === 'year' && $filter_year) {
+  $y = intval($filter_year);
+  $where_filter = " AND YEAR(transaction_date) = $y";
+} else {
+  $where_filter = '';
+}
+
+$where = $where_base . $where_filter;
+
+$total_records_query = "SELECT COUNT(*) as total FROM transactions " . $where;
 $total_records_result = mysqli_query($conn, $total_records_query);
 $total_records = mysqli_fetch_assoc($total_records_result)['total'];
 $total_pages = ceil($total_records / $records_per_page);
 
-// Get paginated online transactions (for web display)
-$transactions_result = mysqli_query($conn, "SELECT * FROM transactions WHERE source = 'online' ORDER BY transaction_date DESC LIMIT $records_per_page OFFSET $offset");
+$transactions_result = mysqli_query($conn, "SELECT * FROM transactions " . $where . " ORDER BY transaction_date DESC LIMIT $records_per_page OFFSET $offset");
 
-// Get ALL online transactions (for PDF download)
-$all_transactions_result = mysqli_query($conn, "SELECT * FROM transactions WHERE source = 'online' ORDER BY transaction_date DESC");
+// Get ALL filtered transactions (for PDF download)
+$all_transactions_result = mysqli_query($conn, "SELECT * FROM transactions " . $where . " ORDER BY transaction_date DESC");
 $all_transactions = [];
 while ($row = mysqli_fetch_assoc($all_transactions_result)) {
   $all_transactions[] = $row;
@@ -33,7 +60,7 @@ $monthly_sales_query = "
     DATE_FORMAT(transaction_date, '%Y-%m') AS month,
     SUM(total_amount) AS total_sales
   FROM transactions
-  WHERE source = 'online'
+  " . $where . "
   GROUP BY month
   ORDER BY month ASC
 ";
@@ -48,6 +75,106 @@ while ($row = mysqli_fetch_assoc($monthly_sales_result)) {
   $sales[] = $row['total_sales'];
   $total_revenue += $row['total_sales'];
 }
+
+// --- Additional KPIs and data for charts ---
+// Most purchased product (online source)
+$most_product = ['product_name' => '—', 'total_qty' => 0];
+$mp_q = "SELECT ti.product_name, SUM(ti.quantity) AS total_qty
+          FROM transaction_items ti
+          JOIN transactions t ON ti.transaction_id = t.transaction_id
+          " . $where . "
+          GROUP BY ti.product_id, ti.product_name
+          ORDER BY total_qty DESC LIMIT 1";
+$mp_res = mysqli_query($conn, $mp_q);
+if ($mp_res && mysqli_num_rows($mp_res) > 0) {
+  $most_product = mysqli_fetch_assoc($mp_res);
+}
+
+// Aggregated purchased products for modal (uses same filter $where)
+$purchased_products = [];
+$pp_q = "SELECT ti.product_name, SUM(ti.quantity) AS total_qty
+          FROM transaction_items ti
+          JOIN transactions t ON ti.transaction_id = t.transaction_id
+          " . $where . "
+          GROUP BY ti.product_id, ti.product_name
+          ORDER BY total_qty DESC";
+$pp_res = mysqli_query($conn, $pp_q);
+if ($pp_res) {
+  while ($r = mysqli_fetch_assoc($pp_res)) {
+    $purchased_products[] = $r;
+  }
+}
+
+// Filtered total (reflects the selected period)
+$filtered_total_q = "SELECT COALESCE(SUM(total_amount),0) AS total FROM transactions " . $where;
+$filtered_total = (float) mysqli_fetch_assoc(mysqli_query($conn, $filtered_total_q))['total'];
+
+// Sales this month (online)
+$sales_month_q = "SELECT COALESCE(SUM(total_amount),0) AS total FROM transactions WHERE source='online' AND YEAR(transaction_date)=YEAR(CURDATE()) AND MONTH(transaction_date)=MONTH(CURDATE())";
+$sales_month = (float) mysqli_fetch_assoc(mysqli_query($conn, $sales_month_q))['total'];
+
+// Sales this year (online)
+$sales_year_q = "SELECT COALESCE(SUM(total_amount),0) AS total FROM transactions WHERE source='online' AND YEAR(transaction_date)=YEAR(CURDATE())";
+$sales_year = (float) mysqli_fetch_assoc(mysqli_query($conn, $sales_year_q))['total'];
+
+// Daily sales data (last 30 days by default). If a filter is applied, adjust granularity:
+$daily_labels = [];
+$daily_values = [];
+if ($period === 'month' && $filter_month) {
+  // show daily totals for the selected month
+  $parts = explode('-', $filter_month);
+  $y = intval($parts[0]);
+  $m = intval($parts[1]);
+  $daily_q = "SELECT DATE(transaction_date) AS day, COALESCE(SUM(total_amount),0) AS total FROM transactions WHERE source='online' AND YEAR(transaction_date)=$y AND MONTH(transaction_date)=$m GROUP BY day ORDER BY day ASC";
+  $daily_res = mysqli_query($conn, $daily_q);
+  $daily_map = [];
+  if ($daily_res) {
+    while ($r = mysqli_fetch_assoc($daily_res)) {
+      $daily_map[$r['day']] = (float)$r['total'];
+    }
+  }
+  // build days of that month
+  $days_in_month = cal_days_in_month(CAL_GREGORIAN, $m, $y);
+  for ($d = 1; $d <= $days_in_month; $d++) {
+    $date_str = sprintf('%04d-%02d-%02d', $y, $m, $d);
+    $daily_labels[] = date('M j', strtotime($date_str));
+    $daily_values[] = isset($daily_map[$date_str]) ? $daily_map[$date_str] : 0;
+  }
+} elseif ($period === 'year' && $filter_year) {
+  // show monthly totals for the selected year
+  $y = intval($filter_year);
+  $daily_q = "SELECT DATE_FORMAT(transaction_date, '%Y-%m') AS day, COALESCE(SUM(total_amount),0) AS total FROM transactions WHERE source='online' AND YEAR(transaction_date)=$y GROUP BY day ORDER BY day ASC";
+  $daily_res = mysqli_query($conn, $daily_q);
+  $daily_map = [];
+  if ($daily_res) {
+    while ($r = mysqli_fetch_assoc($daily_res)) {
+      $daily_map[$r['day']] = (float)$r['total'];
+    }
+  }
+  for ($m = 1; $m <= 12; $m++) {
+    $label = date('M', strtotime(sprintf('%04d-%02d-01', $y, $m)));
+    $key = sprintf('%04d-%02d', $y, $m);
+    $daily_labels[] = $label;
+    $daily_values[] = isset($daily_map[$key]) ? $daily_map[$key] : 0;
+  }
+} else {
+  // default: last 30 days
+  $daily_q = "SELECT DATE(transaction_date) AS day, COALESCE(SUM(total_amount),0) AS total FROM transactions WHERE source='online' AND transaction_date >= DATE_SUB(CURDATE(), INTERVAL 29 DAY) GROUP BY day ORDER BY day ASC";
+  $daily_res = mysqli_query($conn, $daily_q);
+  // build an array indexed by day to fill missing days
+  $daily_map = [];
+  if ($daily_res) {
+    while ($r = mysqli_fetch_assoc($daily_res)) {
+      $daily_map[$r['day']] = (float)$r['total'];
+    }
+  }
+  // populate last 30 days labels and values
+  for ($i = 29; $i >= 0; $i--) {
+    $d = date('Y-m-d', strtotime("-{$i} days"));
+    $daily_labels[] = date('M j', strtotime($d));
+    $daily_values[] = isset($daily_map[$d]) ? $daily_map[$d] : 0;
+  }
+}
 ?>
 
 <!DOCTYPE html>
@@ -55,7 +182,6 @@ while ($row = mysqli_fetch_assoc($monthly_sales_result)) {
 <head>
   <meta charset="UTF-8">
   <title>Transactions - Admin Panel</title>
-  <link rel="stylesheet" href="admin.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -185,6 +311,19 @@ while ($row = mysqli_fetch_assoc($monthly_sales_result)) {
       overflow: hidden;
       border: none;
       cursor: pointer;
+    }
+
+    /* Buttons used inside filter form to keep uniform size */
+    .filter-btn {
+      padding: 8px 16px;
+      border-radius: 12px;
+      min-width: 120px;
+      display: inline-block;
+      text-align: center;
+      box-sizing: border-box;
+      font-weight: 600;
+      font-size: 0.9rem;
+      line-height: 1;
     }
 
     .back-btn::before, .download-btn::before {
@@ -370,6 +509,49 @@ while ($row = mysqli_fetch_assoc($monthly_sales_result)) {
     }
 
     /* ==============================
+       MODAL: Purchased Products
+    ============================== */
+    .modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.45);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      padding: 20px;
+    }
+
+    .modal.show { display: flex; }
+
+    .modal-content {
+      background: #fff;
+      width: 100%;
+      max-width: 900px;
+      border-radius: 12px;
+      padding: 18px;
+      box-shadow: var(--shadow-heavy);
+      position: relative;
+      max-height: 85vh;
+      overflow: auto;
+    }
+
+    .modal-close {
+      position: absolute;
+      right: 14px;
+      top: 10px;
+      background: transparent;
+      border: none;
+      font-size: 20px;
+      cursor: pointer;
+      color: var(--primary-blue);
+    }
+
+    .modal table { width: 100%; border-collapse: collapse; margin-top:12px; }
+    .modal th, .modal td { padding: 8px 10px; border-bottom: 1px solid rgba(0,0,0,0.06); text-align:left; }
+    .modal th { background: #f6f9ff; color: var(--primary-blue); font-weight:700; }
+
+    /* ==============================
        RESPONSIVE DESIGN
     ============================== */
     @media (max-width: 768px) {
@@ -459,6 +641,62 @@ while ($row = mysqli_fetch_assoc($monthly_sales_result)) {
     <!-- PAGE 1: TRANSACTIONS -->
     <div id="transactionsPage">
       <h1>🛒 Customer Orders (Online)</h1>
+      <!-- FILTER FORM -->
+      <form method="GET" style="display:flex; gap:12px; align-items:center; margin-bottom:12px; flex-wrap:wrap;">
+        <label style="font-weight:600; color:#004080;">Filter:</label>
+        <select id="periodSelect" name="period" style="padding:8px 10px; border-radius:8px;">
+          <option value="all" <?= $period === 'all' ? 'selected' : '' ?>>All</option>
+          <option value="day" <?= $period === 'day' ? 'selected' : '' ?>>Day</option>
+          <option value="month" <?= $period === 'month' ? 'selected' : '' ?>>Month</option>
+          <option value="year" <?= $period === 'year' ? 'selected' : '' ?>>Year</option>
+        </select>
+
+        <input type="date" id="dateInput" name="date" value="<?= htmlspecialchars($filter_date) ?>" style="padding:8px 10px; border-radius:8px; display: <?= $period === 'day' ? 'inline-block' : 'none' ?>;">
+        <input type="month" id="monthInput" name="month" value="<?= htmlspecialchars($filter_month) ?>" style="padding:8px 10px; border-radius:8px; display: <?= $period === 'month' ? 'inline-block' : 'none' ?>;">
+        <input type="number" id="yearInput" name="year" min="2000" max="2100" placeholder="YYYY" value="<?= htmlspecialchars($filter_year) ?>" style="padding:8px 10px; border-radius:8px; width:100px; display: <?= $period === 'year' ? 'inline-block' : 'none' ?>;">
+
+        <button type="submit" class="download-btn filter-btn">Apply</button>
+        <a href="customer_orders.php" class="back-btn filter-btn">Reset</a>
+      </form>
+
+      <script>
+        document.getElementById('periodSelect').addEventListener('change', function(){
+          const v = this.value;
+          document.getElementById('dateInput').style.display = v === 'day' ? 'inline-block' : 'none';
+          document.getElementById('monthInput').style.display = v === 'month' ? 'inline-block' : 'none';
+          document.getElementById('yearInput').style.display = v === 'year' ? 'inline-block' : 'none';
+        });
+      </script>
+
+      <!-- KPI CARDS -->
+      <div style="display:flex; gap:18px; margin: 18px 0 6px; flex-wrap:wrap;">
+        <div style="flex:1 1 220px; background:#fff; padding:16px; border-radius:12px; box-shadow:var(--shadow-light); text-align:left;">
+          <div style="font-size:12px; color:#6b7280;">Most Purchased</div>
+          <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-top:6px;">
+            <div style="font-weight:700; font-size:16px;"><?= htmlspecialchars($most_product['product_name']) ?></div>
+            <button id="viewProductsBtn" class="filter-btn" style="padding:6px 10px; font-size:0.85rem; white-space:nowrap;">View All</button>
+          </div>
+          <div style="color:#6b7280; margin-top:6px;">Quantity: <?= number_format($most_product['total_qty']) ?></div>
+        </div>
+        <div style="flex:1 1 160px; background:#fff; padding:16px; border-radius:12px; box-shadow:var(--shadow-light); text-align:left;">
+          <div style="font-size:12px; color:#6b7280;">Total (Filtered)</div>
+          <div style="font-weight:700; font-size:18px; margin-top:6px; color:var(--success-green);">₱<?= number_format($filtered_total,2) ?></div>
+        </div>
+        <div style="flex:1 1 160px; background:#fff; padding:16px; border-radius:12px; box-shadow:var(--shadow-light); text-align:left;">
+          <div style="font-size:12px; color:#6b7280;">Sales This Month</div>
+          <div style="font-weight:700; font-size:18px; margin-top:6px; color:var(--primary-blue);">₱<?= number_format($sales_month,2) ?></div>
+        </div>
+        <div style="flex:1 1 160px; background:#fff; padding:16px; border-radius:12px; box-shadow:var(--shadow-light); text-align:left;">
+          <div style="font-size:12px; color:#6b7280;">Sales This Year</div>
+          <div style="font-weight:700; font-size:18px; margin-top:6px; color:#004080;">₱<?= number_format($sales_year,2) ?></div>
+        </div>
+      </div>
+
+      <!-- DAILY SALES CHART -->
+      <div style="margin:10px 0 20px; background:linear-gradient(145deg,#fff,#f8fbff); padding:14px; border-radius:12px; box-shadow:var(--shadow-light);">
+        <h2 style="margin:0 0 8px; font-size:1rem; color:var(--primary-blue);">Last 30 Days — Daily Sales</h2>
+        <canvas id="dailySalesChart" style="width:100%; height:220px;"></canvas>
+      </div>
       <table>
         <thead>
           <tr>
@@ -483,28 +721,55 @@ while ($row = mysqli_fetch_assoc($monthly_sales_result)) {
       </table>
 
       <!-- Pagination -->
-      <div class="pagination">
-        <?php if ($current_page > 1): ?>
-          <a href="?page=<?= $current_page - 1 ?>" class="page-btn">← Previous</a>
-        <?php endif; ?>
+        <?php
+          // Build pagination links that preserve filters and stay in the transactions section
+          $params = $_GET;
+          // Ensure page param exists (will be overwritten below)
+          if (!isset($params['page'])) $params['page'] = $current_page;
+          $prev_href = '';
+          $next_href = '';
+          if ($current_page > 1) {
+            $params['page'] = $current_page - 1;
+            $prev_href = '?' . http_build_query($params) . '#transactionsPage';
+          }
+          if ($current_page < $total_pages) {
+            $params['page'] = $current_page + 1;
+            $next_href = '?' . http_build_query($params) . '#transactionsPage';
+          }
+        ?>
 
-        <span class="page-info">
-          Page <?= $current_page ?> of <?= $total_pages ?> (Total: <?= $total_records ?> records)
-        </span>
+        <div class="pagination">
+          <?php if ($prev_href): ?>
+            <a href="<?= htmlspecialchars($prev_href) ?>" class="page-btn">← Previous</a>
+          <?php endif; ?>
 
-        <?php if ($current_page < $total_pages): ?>
-          <a href="?page=<?= $current_page + 1 ?>" class="page-btn">Next →</a>
-        <?php endif; ?>
-      </div>
+          <span class="page-info">
+            Page <?= $current_page ?> of <?= $total_pages ?> (Total: <?= $total_records ?> records)
+          </span>
+
+          <?php if ($next_href): ?>
+            <a href="<?= htmlspecialchars($next_href) ?>" class="page-btn">Next →</a>
+          <?php endif; ?>
+        </div>
     </div>
 
-    <!-- PAGE 2: SALES SUMMARY -->
-    <div id="salesPage" class="sales-summary">
-      <h2>📊 Online Sales Summary</h2>
-      <div class="total-revenue">
-        Total Revenue: <strong>₱<?= number_format($total_revenue, 2) ?></strong>
+    <!-- Sales Summary removed per user request -->
+    <!-- Purchased Products Modal -->
+    <div id="productsModal" class="modal" aria-hidden="true">
+      <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="productsModalTitle">
+        <button class="modal-close" id="productsModalClose" title="Close">✕</button>
+        <h3 id="productsModalTitle" style="margin:0 0 8px; color:var(--primary-blue);">Purchased Products</h3>
+        <div style="color:#6b7280; font-size:0.95rem;">Showing products for current filter selection.</div>
+
+        <table id="productsTable">
+          <thead>
+            <tr><th>Product Name</th><th style="width:120px; text-align:right;">Quantity</th></tr>
+          </thead>
+          <tbody>
+            <!-- populated by JS -->
+          </tbody>
+        </table>
       </div>
-      <canvas id="salesChart"></canvas>
     </div>
   </div>
 
@@ -726,100 +991,86 @@ while ($row = mysqli_fetch_assoc($monthly_sales_result)) {
       pdf.save('Customer_Orders_Report.pdf');
     });
 
-    // Chart rendering - Wait for DOM to be ready
+    // Initialize chart on page load (no AJAX partials)
     document.addEventListener('DOMContentLoaded', function() {
-      const chartCanvas = document.getElementById('salesChart');
-      if (chartCanvas) {
-        const ctx = chartCanvas.getContext('2d');
-        const salesChart = new Chart(ctx, {
-          type: 'pie',
+      const dailyEl = document.getElementById('dailySalesChart');
+      const labels = <?= json_encode($daily_labels) ?>;
+      const values = <?= json_encode($daily_values) ?>;
+
+      if (dailyEl) {
+        // create a distinct color for each bar (repeats if more bars than palette)
+        const barColors = labels.map((_, i) => `hsl(${(i * 30) % 360} 72% 55%)`);
+        const borderColors = labels.map((_, i) => `hsl(${(i * 30) % 360} 70% 40%)`);
+
+        new Chart(dailyEl.getContext('2d'), {
+          type: 'bar',
           data: {
-            labels: <?= json_encode($months) ?>,
+            labels: labels,
             datasets: [{
-              label: 'Monthly Sales Distribution',
-              data: <?= json_encode($sales) ?>,
-              backgroundColor: [
-                '#2E86C1',
-                '#3498DB', 
-                '#5DADE2',
-                '#85C1E9',
-                '#AED6F1',
-                '#D6EAF8',
-                '#E8F6F3',
-                '#F7DC6F',
-                '#F4D03F',
-                '#F1C40F',
-                '#E67E22',
-                '#D35400'
-              ],
-              borderColor: '#ffffff',
-              borderWidth: 3,
-              hoverBorderWidth: 5,
-              hoverBorderColor: '#ffcc00'
+              label: 'Daily Sales (₱)',
+              data: values,
+              backgroundColor: barColors,
+              borderColor: borderColors,
+              borderWidth: 1
             }]
           },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-              legend: {
-                display: true,
-                position: 'right',
-                labels: {
-                  font: {
-                    family: 'Poppins',
-                    size: 13,
-                    weight: '700'
-                  },
-                  color: '#2c3e50',
-                  padding: 18,
-                  usePointStyle: true,
-                  pointStyle: 'circle',
-                  boxWidth: 15,
-                  boxHeight: 15
-                }
-              },
-              tooltip: {
-                backgroundColor: 'rgba(255, 255, 255, 0.95)',
-                titleColor: '#2c3e50',
-                bodyColor: '#2c3e50',
-                borderColor: '#3498DB',
-                borderWidth: 2,
-                cornerRadius: 12,
-                displayColors: true,
-                titleFont: {
-                  size: 14,
-                  weight: 'bold'
-                },
-                bodyFont: {
-                  size: 13,
-                  weight: '600'
-                },
-                padding: 12,
-                callbacks: {
-                  label: function(context) {
-                    const value = context.parsed;
-                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                    const percentage = ((value / total) * 100).toFixed(1);
-                    return `${context.label}: ₱${value.toLocaleString()} (${percentage}%)`;
-                  }
-                }
-              }
-            },
-            animation: {
-              duration: 2000,
-              easing: 'easeOutBounce'
-            },
-            elements: {
-              arc: {
-                borderWidth: 3,
-                hoverBorderWidth: 5
-              }
-            }
-          }
+          options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } }, plugins: { legend: { display: false } } }
         });
       }
+
+      if (location.hash === '#transactionsPage') {
+        setTimeout(() => {
+          const el = document.getElementById('transactionsPage');
+          if (el) {
+            const headerOffset = 30;
+            const top = el.getBoundingClientRect().top + window.scrollY - headerOffset;
+            window.scrollTo({ top: top, behavior: 'smooth' });
+          }
+        }, 60);
+      }
+
+        // ----- Purchased Products Modal -----
+        const purchasedProducts = <?= json_encode($purchased_products) ?>;
+        const modal = document.getElementById('productsModal');
+        const modalClose = document.getElementById('productsModalClose');
+        const viewBtn = document.getElementById('viewProductsBtn');
+        const productsTbody = document.querySelector('#productsTable tbody');
+
+        function openProductsModal() {
+          // populate table
+          productsTbody.innerHTML = '';
+          if (!purchasedProducts || purchasedProducts.length === 0) {
+            productsTbody.innerHTML = '<tr><td colspan="2" style="text-align:center; color:#666; padding:14px;">No products found for the current filter.</td></tr>';
+          } else {
+            purchasedProducts.forEach(p => {
+              const tr = document.createElement('tr');
+              const nameTd = document.createElement('td');
+              nameTd.textContent = p.product_name;
+              const qtyTd = document.createElement('td');
+              qtyTd.style.textAlign = 'right';
+              qtyTd.textContent = Number(p.total_qty).toLocaleString();
+              tr.appendChild(nameTd);
+              tr.appendChild(qtyTd);
+              productsTbody.appendChild(tr);
+            });
+          }
+
+          modal.classList.add('show');
+          modal.setAttribute('aria-hidden', 'false');
+        }
+
+        function closeProductsModal() {
+          modal.classList.remove('show');
+          modal.setAttribute('aria-hidden', 'true');
+        }
+
+        if (viewBtn) viewBtn.addEventListener('click', openProductsModal);
+        if (modalClose) modalClose.addEventListener('click', closeProductsModal);
+        // close when clicking outside content
+        if (modal) modal.addEventListener('click', (e) => { if (e.target === modal) closeProductsModal(); });
+        // close with Esc
+        document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeProductsModal(); });
     });
   </script>
 </body>
-</html>
+</html> 

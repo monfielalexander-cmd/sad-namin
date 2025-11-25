@@ -10,11 +10,63 @@ if ($conn->connect_error) {
     die("Connection failed: " . $conn->connect_error);
 }
 
+// PHPMailer for admin-triggered notifications
+require 'vendor/autoload.php';
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\Exception;
+
 /* ---------------- UPDATE TRANSACTION STATUS (AJAX) ---------------- */
 if (isset($_POST['ajax_update'])) {
     $transaction_id = intval($_POST['transaction_id']);
     $new_status = $conn->real_escape_string($_POST['status']);
     $conn->query("UPDATE transactions SET status='$new_status' WHERE transaction_id=$transaction_id");
+
+    // If status became Success, notify the customer by email
+    if (strtolower($new_status) === 'success') {
+        // fetch the transaction's user_id and transaction_date
+        $txn_res = $conn->query("SELECT user_id, transaction_date FROM transactions WHERE transaction_id=$transaction_id LIMIT 1");
+        if ($txn_res && $txn_res->num_rows > 0) {
+            $txn = $txn_res->fetch_assoc();
+            $user_id = intval($txn['user_id']);
+            $transaction_date = $txn['transaction_date'];
+
+            // fetch user email and name
+            $user_res = $conn->query("SELECT email, fname, lname FROM users WHERE id=$user_id LIMIT 1");
+            if ($user_res && $user_res->num_rows > 0) {
+                $user = $user_res->fetch_assoc();
+                $user_email = $user['email'];
+                $user_name = trim(($user['fname'] ?? '') . ' ' . ($user['lname'] ?? '')) ?: 'Customer';
+
+                if (!empty($user_email)) {
+                    $mail = new PHPMailer(true);
+                    try {
+                        $mail->isSMTP();
+                        $mail->Host = 'smtp.gmail.com';
+                        $mail->SMTPAuth = true;
+                        $mail->Username = 'rogeliomonfielsr@gmail.com';
+                        $mail->Password = 'kioa rdpq tews rcdx';
+                        $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+                        $mail->Port = 587;
+                        $mail->setFrom('rogeliomonfielsr@gmail.com', 'Abeth Hardware');
+                        $mail->addAddress($user_email, $user_name);
+                        $mail->isHTML(true);
+                        $mail->Subject = "Your order #$transaction_id is complete";
+
+                        $readable_date = date('M d, Y g:i A', strtotime($transaction_date));
+                        $mail_body = "<p>Hello " . htmlspecialchars($user_name) . ",</p>" .
+                                     "<p>Your order <strong>#" . $transaction_id . "</strong> placed on " . $readable_date . " has been marked as <strong>Delivered / Completed</strong>. Thank you for shopping with Abeth Hardware.</p>" .
+                                     "<p>If you have questions about your order, reply to this email or contact us at 📞 +63 966-866-9728.</p>";
+
+                        $mail->Body = $mail_body;
+                        $mail->send();
+                    } catch (Exception $e) {
+                        error_log('Delivery notification mailer error: ' . $mail->ErrorInfo);
+                    }
+                }
+            }
+        }
+    }
+
     echo json_encode(["success" => true]);
     exit;
 }

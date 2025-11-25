@@ -148,17 +148,46 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['transaction_data'])) 
 }
 
 // Display transactions (onsite/pos)
+// Filter params (period: day|month|year|all)
 $records_per_page = 10;
 $current_page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
 $offset = ($current_page - 1) * $records_per_page;
 
-// Count total transactions
-$total_result = $conn->query("SELECT COUNT(*) AS total FROM transactions WHERE source = 'pos'");
+$period = isset($_GET['period']) ? $_GET['period'] : 'all';
+$filter_date = isset($_GET['date']) ? $conn->real_escape_string($_GET['date']) : '';
+$filter_month = isset($_GET['month']) ? $conn->real_escape_string($_GET['month']) : '';
+$filter_year = isset($_GET['year']) ? $conn->real_escape_string($_GET['year']) : '';
+
+// Build WHERE clause for filtered queries (limit to onsite POS source)
+$where_base = "WHERE source='pos'";
+if ($period === 'day' && $filter_date) {
+  $where_filter = " AND DATE(transaction_date) = '" . $filter_date . "'";
+} elseif ($period === 'month' && $filter_month) {
+  $parts = explode('-', $filter_month);
+  if (count($parts) === 2) {
+    $y = intval($parts[0]);
+    $m = intval($parts[1]);
+    $where_filter = " AND YEAR(transaction_date) = $y AND MONTH(transaction_date) = $m";
+  } else {
+    $where_filter = '';
+  }
+} elseif ($period === 'year' && $filter_year) {
+  $y = intval($filter_year);
+  $where_filter = " AND YEAR(transaction_date) = $y";
+} else {
+  $where_filter = '';
+}
+
+$where = $where_base . $where_filter;
+
+// Count total transactions (with filters)
+$total_result = $conn->query("SELECT COUNT(*) AS total FROM transactions " . $where);
 $total_records = ($row = $total_result->fetch_assoc()) ? $row['total'] : 0;
 $total_pages = max(1, ceil($total_records / $records_per_page));
 
-// Get paginated transactions
-$transactions_query = $conn->prepare("SELECT * FROM transactions WHERE source = 'pos' ORDER BY transaction_date DESC LIMIT ? OFFSET ?");
+// Get paginated transactions (with filters)
+$sql = "SELECT * FROM transactions " . $where . " ORDER BY transaction_date DESC LIMIT ? OFFSET ?";
+$transactions_query = $conn->prepare($sql);
 $transactions_query->bind_param("ii", $records_per_page, $offset);
 $transactions_query->execute();
 $transactions_result = $transactions_query->get_result();
@@ -167,7 +196,7 @@ $transactions_result = $transactions_query->get_result();
 $monthly_sales_query = "
   SELECT DATE_FORMAT(transaction_date, '%Y-%m') AS month, SUM(total_amount) AS total_sales
   FROM transactions
-  WHERE source = 'pos'
+  " . $where . "
   GROUP BY month
   ORDER BY month ASC
 ";
@@ -181,6 +210,79 @@ while ($row = $monthly_sales_result->fetch_assoc()) {
   $sales[] = $row['total_sales'];
   $total_revenue += $row['total_sales'];
 }
+
+// --- Daily sales data for chart (last 30 days or filtered period) ---
+$daily_labels = [];
+$daily_values = [];
+if ($period === 'month' && $filter_month) {
+  $parts = explode('-', $filter_month);
+  $y = intval($parts[0]);
+  $m = intval($parts[1]);
+  $daily_q = "SELECT DATE(transaction_date) AS day, COALESCE(SUM(total_amount),0) AS total FROM transactions " . $where . " AND YEAR(transaction_date)=$y AND MONTH(transaction_date)=$m GROUP BY day ORDER BY day ASC";
+  $daily_res = $conn->query($daily_q);
+  $daily_map = [];
+  if ($daily_res) while ($r = $daily_res->fetch_assoc()) $daily_map[$r['day']] = (float)$r['total'];
+  $days_in_month = cal_days_in_month(CAL_GREGORIAN, $m, $y);
+  for ($d = 1; $d <= $days_in_month; $d++) {
+    $date_str = sprintf('%04d-%02d-%02d', $y, $m, $d);
+    $daily_labels[] = date('M j', strtotime($date_str));
+    $daily_values[] = isset($daily_map[$date_str]) ? $daily_map[$date_str] : 0;
+  }
+} elseif ($period === 'year' && $filter_year) {
+  $y = intval($filter_year);
+  $daily_q = "SELECT DATE_FORMAT(transaction_date, '%Y-%m') AS day, COALESCE(SUM(total_amount),0) AS total FROM transactions " . $where . " AND YEAR(transaction_date)=$y GROUP BY day ORDER BY day ASC";
+  $daily_res = $conn->query($daily_q);
+  $daily_map = [];
+  if ($daily_res) while ($r = $daily_res->fetch_assoc()) $daily_map[$r['day']] = (float)$r['total'];
+  for ($m = 1; $m <= 12; $m++) {
+    $label = date('M', strtotime(sprintf('%04d-%02d-01', $y, $m)));
+    $key = sprintf('%04d-%02d', $y, $m);
+    $daily_labels[] = $label;
+    $daily_values[] = isset($daily_map[$key]) ? $daily_map[$key] : 0;
+  }
+} else {
+  $daily_q = "SELECT DATE(transaction_date) AS day, COALESCE(SUM(total_amount),0) AS total FROM transactions " . $where . " AND transaction_date >= DATE_SUB(CURDATE(), INTERVAL 29 DAY) GROUP BY day ORDER BY day ASC";
+  $daily_res = $conn->query($daily_q);
+  $daily_map = [];
+  if ($daily_res) while ($r = $daily_res->fetch_assoc()) $daily_map[$r['day']] = (float)$r['total'];
+  for ($i = 29; $i >= 0; $i--) {
+    $d = date('Y-m-d', strtotime("-{$i} days"));
+    $daily_labels[] = date('M j', strtotime($d));
+    $daily_values[] = isset($daily_map[$d]) ? $daily_map[$d] : 0;
+  }
+}
+
+// Most purchased product (onsite)
+$most_product = ['product_name' => '—', 'total_qty' => 0];
+$mp_q = "SELECT ti.product_name, SUM(ti.quantity) AS total_qty FROM transaction_items ti JOIN transactions t ON ti.transaction_id = t.transaction_id " . $where . " GROUP BY ti.product_id, ti.product_name ORDER BY total_qty DESC LIMIT 1";
+$mp_res = $conn->query($mp_q);
+if ($mp_res && $mp_res->num_rows > 0) $most_product = $mp_res->fetch_assoc();
+
+// Aggregated purchased products for modal
+$purchased_products = [];
+$pp_q = "SELECT ti.product_name, SUM(ti.quantity) AS total_qty FROM transaction_items ti JOIN transactions t ON ti.transaction_id = t.transaction_id " . $where . " GROUP BY ti.product_id, ti.product_name ORDER BY total_qty DESC";
+$pp_res = $conn->query($pp_q);
+if ($pp_res) while ($r = $pp_res->fetch_assoc()) $purchased_products[] = $r;
+
+// Filtered total (reflects the selected period)
+$filtered_total_q = "SELECT COALESCE(SUM(total_amount),0) AS total FROM transactions " . $where;
+$filtered_total_res = $conn->query($filtered_total_q);
+$filtered_total = ($filtered_total_res && ($row = $filtered_total_res->fetch_assoc())) ? (float)$row['total'] : 0.0;
+
+// Sales this month (onsite)
+$sales_month_q = "SELECT COALESCE(SUM(total_amount),0) AS total FROM transactions WHERE source='pos' AND YEAR(transaction_date)=YEAR(CURDATE()) AND MONTH(transaction_date)=MONTH(CURDATE())";
+$sales_month_res = $conn->query($sales_month_q);
+$sales_month = ($sales_month_res && ($r = $sales_month_res->fetch_assoc())) ? (float)$r['total'] : 0.0;
+
+// Sales this year (onsite)
+$sales_year_q = "SELECT COALESCE(SUM(total_amount),0) AS total FROM transactions WHERE source='pos' AND YEAR(transaction_date)=YEAR(CURDATE())";
+$sales_year_res = $conn->query($sales_year_q);
+$sales_year = ($sales_year_res && ($r2 = $sales_year_res->fetch_assoc())) ? (float)$r2['total'] : 0.0;
+
+// All filtered transactions (for PDF export)
+$all_transactions = [];
+$all_q = $conn->query("SELECT * FROM transactions " . $where . " ORDER BY transaction_date DESC");
+if ($all_q) while ($ar = $all_q->fetch_assoc()) $all_transactions[] = $ar;
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -188,90 +290,325 @@ while ($row = $monthly_sales_result->fetch_assoc()) {
   <meta charset="UTF-8">
   <title>Onsite Transactions</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="ot.css">
+  <style>
+/* ==============================
+   CSS VARIABLES & BASE STYLES
+============================== */
+:root {
+  --primary-blue: #004080;
+  --secondary-blue: #0066cc;
+  --accent-gold: #ffcc00;
+  --dark-gold: #e6b800;
+  --text-dark: #333;
+  --text-light: #555;
+  --bg-light: #f9f9f9;
+  --shadow-light: 0 4px 15px rgba(0, 64, 128, 0.1);
+  --shadow-medium: 0 8px 25px rgba(0, 64, 128, 0.15);
+  --shadow-heavy: 0 12px 35px rgba(0, 64, 128, 0.2);
+  --transition: all 0.3s ease;
+  --border-radius: 12px;
+  --success-green: #27ae60;
+  --danger-red: #e74c3c;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Poppins', sans-serif;
+}
+
+body {
+  line-height: 1.6;
+  color: var(--text-dark);
+  background: linear-gradient(135deg, #f8faff 0%, #e8f2ff 100%);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+  .container {
+  max-width: 100%;
+  width: calc(100% - 40px);
+  margin: 10px auto;
+  background: linear-gradient(145deg, #ffffff 0%, #f8faff 100%);
+  padding: 20px;
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow-heavy);
+  min-height: 90vh;
+  display: block;
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  position: relative;
+}
+
+.container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(145deg, transparent 0%, rgba(255, 204, 0, 0.02) 100%);
+  pointer-events: none;
+  border-radius: var(--border-radius);
+}
+
+/* ==============================
+   ENHANCED TYPOGRAPHY
+============================== */
+h2, h3 {
+  margin-bottom: 20px;
+  color: var(--primary-blue);
+  font-weight: 700;
+  text-shadow: 1px 1px 2px rgba(0, 64, 128, 0.1);
+  background: linear-gradient(45deg, var(--primary-blue), var(--secondary-blue));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  position: relative;
+}
+
+h2 {
+  font-size: 2rem;
+}
+
+h2::after {
+  content: '';
+  position: absolute;
+  bottom: -8px;
+  left: 0;
+  width: 60px;
+  height: 4px;
+  background: linear-gradient(45deg, var(--accent-gold), #ffd700);
+  border-radius: 2px;
+}
+
+h3 {
+  font-size: 1.5rem;
+}
+
+.back-btn {
+  background: linear-gradient(45deg, var(--secondary-blue), #0080ff);
+  color: white;
+  padding: 12px 20px;
+  border-radius: 25px;
+  display: inline-block;
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin-bottom: 25px;
+  transition: var(--transition);
+  box-shadow: 0 4px 15px rgba(0, 102, 204, 0.3);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  position: relative;
+  overflow: hidden;
+}
+
+.back-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 204, 0, 0.3), transparent);
+  transition: left 0.5s;
+}
+
+.back-btn:hover {
+  background: linear-gradient(45deg, #0080ff, var(--secondary-blue));
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 102, 204, 0.4);
+  text-decoration: none;
+  color: white;
+}
+
+.back-btn:hover::before {
+  left: 100%;
+}
+
+/* Top buttons container (Back / Download) */
+.top-buttons {
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:15px;
+  margin-bottom:25px;
+  flex-wrap:wrap;
+}
+
+
+/* Filter form and inputs */
+.filter-form { display:flex; gap:12px; align-items:center; margin-bottom:12px; flex-wrap:wrap; }
+.filter-label { font-weight:600; color:var(--primary-blue); }
+.filter-input { padding:8px 10px; border-radius:8px; border:1px solid #e0e6f0; }
+.filter-input[type="number"] { width:100px; }
+.filter-btn { padding:8px 12px; border-radius:12px; min-width:120px; display:inline-block; text-align:center; font-weight:600; background:linear-gradient(45deg,#0077dd,#0090ff); color:#fff; border:none; cursor:pointer; }
+
+/* KPI cards */
+.kpi-cards { display:flex; gap:18px; margin:18px 0 6px; flex-wrap:wrap; }
+.kpi-card { flex:1 1 160px; background:#fff; padding:16px; border-radius:12px; box-shadow:var(--shadow-light); text-align:left; }
+.kpi-card.wide { flex:1 1 220px; }
+.kpi-value.large { font-size:16px; }
+.kpi-value.success { color: var(--success-green); }
+.kpi-value.primary { color: var(--primary-blue); }
+
+.kpi-card .kpi-title { font-size:12px; color:#6b7280; }
+.kpi-card .kpi-value { font-weight:700; font-size:18px; margin-top:6px; }
+.kpi-card .kpi-action { display:inline-block; padding:6px 10px; font-size:0.85rem; border-radius:8px; background:transparent; color:var(--primary-blue); border:1px solid rgba(0,64,128,0.06); }
+
+/* Daily chart container */
+.daily-chart { margin:18px auto 24px; background:linear-gradient(145deg,#fff,#f8fbff); padding:22px 26px; border-radius:12px; box-shadow:var(--shadow-light); max-width:1100px; }
+.daily-chart h2 { margin:0 0 8px; font-size:1rem; color:var(--primary-blue); text-align:center; }
+.daily-chart canvas { width:100%; max-width:100%; margin:12px auto 0; display:block; }
+
+/* Larger, centered daily sales canvas sizing to match reference */
+#dailySalesChart { width:100% !important; height:360px !important; max-width:100%; display:block; }
+
+/* Actions wrapper for filter buttons */
+.filter-actions { display:inline-flex; gap:8px; align-items:center; }
+
+/* Page info */
+.page-info { color:var(--text-dark); margin:0 12px; }
+</style>
 </head>
 <body>
 
-<div class="container" style="display:flex; gap:25px; align-items:flex-start;">
+<div class="container">
+  <div class="top-buttons">
+    <a href="pos.php" class="back-btn">← Back to POS</a>
+  </div>
 
-    <!-- LEFT SIDE: TRANSACTION TABLE -->
-    <div style="flex:2;">
-        <a href="pos.php" class="back-btn">⬅ Back</a>
-        <h2>Onsite POS Transactions</h2>
+  <div id="transactionsPage">
+    <h1>🛒 Onsite POS Transactions</h1>
 
-        <?php if (isset($_GET['voided'])): ?>
-          <div class="success-message">
-            ✅ Transaction voided successfully! Stock has been restored.
-          </div>
-        <?php endif; ?>
+    <!-- FILTER FORM -->
+    <form method="GET" class="filter-form">
+      <label class="filter-label">Filter:</label>
+      <select id="periodSelect" name="period" class="filter-input">
+        <option value="all" <?= $period === 'all' ? 'selected' : '' ?>>All</option>
+        <option value="day" <?= $period === 'day' ? 'selected' : '' ?>>Day</option>
+        <option value="month" <?= $period === 'month' ? 'selected' : '' ?>>Month</option>
+        <option value="year" <?= $period === 'year' ? 'selected' : '' ?>>Year</option>
+      </select>
+      <input type="date" id="dateInput" name="date" value="<?= htmlspecialchars($filter_date) ?>" class="filter-input" style="display: <?= $period === 'day' ? 'inline-block' : 'none' ?>;">
+      <input type="month" id="monthInput" name="month" value="<?= htmlspecialchars($filter_month) ?>" class="filter-input" style="display: <?= $period === 'month' ? 'inline-block' : 'none' ?>;">
+      <input type="number" id="yearInput" name="year" min="2000" max="2100" placeholder="YYYY" value="<?= htmlspecialchars($filter_year) ?>" class="filter-input" style="display: <?= $period === 'year' ? 'inline-block' : 'none' ?>;">
 
-        <table>
-          <thead>
-            <tr>
-              <th>Transaction ID</th>
-              <th>User</th>
-              <th>Total Amount (₱)</th>
-              <th>Date</th>
-              <th>Items</th>
-              <th>Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            <?php while ($t = $transactions_result->fetch_assoc()) { ?>
-              <?php
-                $items = [];
-                $item_query = $conn->prepare("
-                    SELECT ti.quantity, ti.price, p.name, p.category
-                    FROM transaction_items ti
-                    LEFT JOIN products_ko p ON ti.product_id = p.id
-                    WHERE ti.transaction_id = ?
-                ");
-                $item_query->bind_param("i", $t['transaction_id']);
-                $item_query->execute();
-                $res = $item_query->get_result();
-                while($i = $res->fetch_assoc()){
-                  $items[] = [
-                    "name" => $i['name'],
-                    "category" => $i['category'],
-                    "quantity" => $i['quantity'],
-                    "price" => $i['price']
-                  ];
-                }
-                $item_query->close();
-              ?>
-              <tr>
-                <td><?= htmlspecialchars($t['transaction_id']) ?></td>
-                <td><?= htmlspecialchars($t['user_id']) ?></td>
-                <td>₱<?= number_format($t['total_amount'],2) ?></td>
-                <td><?= htmlspecialchars($t['transaction_date']) ?></td>
-                <td><button class="view-items" data-items='<?= json_encode($items) ?>'>View Items</button></td>
-                <td>
-                  <button class="void-btn" onclick="openVoidModal(<?= $t['transaction_id'] ?>)">Void</button>
-                </td>
-              </tr>
-            <?php } ?>
-          </tbody>
-        </table>
+      <div class="filter-actions">
+        <button type="submit" class="filter-btn">Apply</button>
+        <a href="onsite_transaction.php" class="back-btn filter-btn">Reset</a>
+      </div>
+    </form>
 
-        <div class="pagination">
-          <?php if ($current_page > 1): ?>
-            <a href="?page=<?= $current_page - 1 ?>">← Previous</a>
-          <?php endif; ?>
-          <span>Page <?= $current_page ?> of <?= $total_pages ?> (Total: <?= $total_records ?> records)</span>
-          <?php if ($current_page < $total_pages): ?>
-            <a href="?page=<?= $current_page + 1 ?>">Next →</a>
-          <?php endif; ?>
+    <script>
+      document.getElementById('periodSelect').addEventListener('change', function(){
+        const v = this.value;
+        document.getElementById('dateInput').style.display = v === 'day' ? 'inline-block' : 'none';
+        document.getElementById('monthInput').style.display = v === 'month' ? 'inline-block' : 'none';
+        document.getElementById('yearInput').style.display = v === 'year' ? 'inline-block' : 'none';
+      });
+    </script>
+
+    <!-- KPI CARDS -->
+    <div class="kpi-cards">
+      <div class="kpi-card wide">
+        <div class="kpi-title">Most Purchased</div>
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-top:6px;">
+          <div class="kpi-value large"><?= htmlspecialchars($most_product['product_name']) ?></div>
+          <button id="viewProductsBtn" class="kpi-action">View All</button>
         </div>
+        <div style="color:#6b7280; margin-top:6px;">Quantity: <?= number_format($most_product['total_qty']) ?></div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-title">Total (Filtered)</div>
+        <div class="kpi-value success">₱<?= number_format($filtered_total,2) ?></div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-title">Sales This Month</div>
+        <div class="kpi-value primary">₱<?= number_format($sales_month,2) ?></div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-title">Sales This Year</div>
+        <div class="kpi-value" style="color:#004080;">₱<?= number_format($sales_year,2) ?></div>
+      </div>
     </div>
 
-    <!-- RIGHT SIDE: SALES CHART -->
-    <div class="chart-container">
-        <h3>📊 Monthly Sales Distribution</h3>
-        <p>Total Revenue: <strong>₱<?= number_format($total_revenue,2) ?></strong></p>
-        <div class="chart-wrapper" style="height: 400px; width: 400px; margin: 20px auto;">
-          <canvas id="salesChart"></canvas>
-        </div>
+    <!-- DAILY SALES CHART -->
+    <div class="daily-chart">
+      <h2>Last 30 Days — Daily Sales</h2>
+      <div class="chart-inner" style="display:flex; justify-content:center;">
+        <canvas id="dailySalesChart"></canvas>
+      </div>
     </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Transaction ID</th>
+          <th>User</th>
+          <th>Total Amount (₱)</th>
+          <th>Date</th>
+          <th>Items</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        <?php while ($t = $transactions_result->fetch_assoc()) { ?>
+          <?php
+            $items = [];
+            $item_query = $conn->prepare("SELECT ti.quantity, ti.price, p.name, p.category FROM transaction_items ti LEFT JOIN products_ko p ON ti.product_id = p.id WHERE ti.transaction_id = ?");
+            $item_query->bind_param("i", $t['transaction_id']);
+            $item_query->execute();
+            $res = $item_query->get_result();
+            while($i = $res->fetch_assoc()){
+              $items[] = [
+                "name" => $i['name'],
+                "category" => $i['category'],
+                "quantity" => $i['quantity'],
+                "price" => $i['price']
+              ];
+            }
+            $item_query->close();
+          ?>
+          <tr>
+            <td><?= htmlspecialchars($t['transaction_id']) ?></td>
+            <td><?= htmlspecialchars($t['user_id']) ?></td>
+            <td>₱<?= number_format($t['total_amount'],2) ?></td>
+            <td><?= htmlspecialchars($t['transaction_date']) ?></td>
+            <td><button class="view-items" data-items='<?= json_encode($items) ?>'>View Items</button></td>
+            <td>
+              <button class="void-btn" onclick="openVoidModal(<?= $t['transaction_id'] ?>)">Void</button>
+            </td>
+          </tr>
+        <?php } ?>
+      </tbody>
+    </table>
+
+    <?php
+      // Build pagination links that preserve filters and scroll to transactions section
+      $params = $_GET;
+      if (!isset($params['page'])) $params['page'] = $current_page;
+      $prev_href = '';
+      $next_href = '';
+      if ($current_page > 1) { $params['page'] = $current_page - 1; $prev_href = '?' . http_build_query($params) . '#transactionsPage'; }
+      if ($current_page < $total_pages) { $params['page'] = $current_page + 1; $next_href = '?' . http_build_query($params) . '#transactionsPage'; }
+    ?>
+
+    <div class="pagination">
+      <?php if ($prev_href): ?><a href="<?= htmlspecialchars($prev_href) ?>" class="page-btn">← Previous</a><?php endif; ?>
+      <span class="page-info">Page <?= $current_page ?> of <?= $total_pages ?> (Total: <?= $total_records ?> records)</span>
+      <?php if ($next_href): ?><a href="<?= htmlspecialchars($next_href) ?>" class="page-btn">Next →</a><?php endif; ?>
+    </div>
+
+  </div>
 
 </div>
 
@@ -299,8 +636,20 @@ while ($row = $monthly_sales_result->fetch_assoc()) {
   </div>
 </div>
 
+<!-- Purchased Products Modal -->
+<div id="productsModal" class="modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.45); align-items:center; justify-content:center; z-index:9999;">
+  <div style="background:#fff; width:90%; max-width:800px; border-radius:10px; padding:16px; max-height:80vh; overflow:auto;">
+    <button style="float:right; background:transparent; border:none; font-size:20px; color:#004080;" id="productsModalClose">✕</button>
+    <h3 style="color:#004080;">Purchased Products (Onsite)</h3>
+    <table style="width:100%; margin-top:8px; border-collapse:collapse;">
+      <thead><tr><th style="text-align:left; padding:8px;">Product</th><th style="text-align:right; padding:8px; width:120px;">Qty</th></tr></thead>
+      <tbody id="productsModalBody"></tbody>
+    </table>
+  </div>
+</div>
+
 <!-- VOID MODAL -->
-<div id="voidModal" class="modal-overlay" style="display: none;">
+<div id="voidModal" class="modal-overlay" aria-hidden="true">
   <div class="modal-box" style="max-width: 550px;">
     <h3>Void Transaction</h3>
     <div class="modal-content void-modal-content">
@@ -327,6 +676,7 @@ while ($row = $monthly_sales_result->fetch_assoc()) {
 </div>
 
 <script>
+// view items modal
 document.querySelectorAll(".view-items").forEach(btn => {
   btn.addEventListener("click", function() {
     let items = JSON.parse(this.dataset.items);
@@ -357,63 +707,89 @@ function closeVoidModal() {
   document.getElementById('voidForm').reset();
 }
 
-new Chart(document.getElementById('salesChart'), {
-  type: 'pie',
-  data: { 
-    labels: <?= json_encode($months) ?>, 
-    datasets: [{
-      label: 'Monthly Sales (₱)',
-      data: <?= json_encode($sales) ?>,
-      backgroundColor: [
-        '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', 
-        '#FECA57', '#FF9FF3', '#54A0FF', '#5F27CD',
-        '#00D2D3', '#FF9F43', '#10AC84', '#EE5A24'
-      ],
-      borderColor: '#ffffff',
-      borderWidth: 3,
-      hoverBorderWidth: 5,
-      hoverOffset: 15
-    }]
-  },
-  options: {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: {
-        position: 'bottom',
-        labels: {
-          padding: 20,
-          usePointStyle: true,
-          font: {
-            size: 12
-          }
-        }
-      },
-      tooltip: {
-        backgroundColor: 'rgba(0, 0, 0, 0.8)',
-        titleColor: '#ffffff',
-        bodyColor: '#ffffff',
-        borderColor: '#ffffff',
-        borderWidth: 1,
-        cornerRadius: 8,
-        callbacks: {
-          label: function(context) {
-            const total = context.dataset.data.reduce((a, b) => a + b, 0);
-            const percentage = ((context.raw / total) * 100).toFixed(1);
-            return `${context.label}: ₱${context.raw.toFixed(2)} (${percentage}%)`;
-          }
-        }
-      }
-    },
-    animation: {
-      animateScale: true,
-      animateRotate: true,
-      duration: 1000
-    },
-    onHover: (event, elements) => {
-      event.native.target.style.cursor = elements.length > 0 ? 'pointer' : 'default';
-    }
+// Page init: chart, modals, download
+document.addEventListener('DOMContentLoaded', function() {
+  // Daily chart (customer_orders style)
+  const dailyEl = document.getElementById('dailySalesChart');
+  const labels = <?= json_encode($daily_labels) ?>;
+  const values = <?= json_encode($daily_values) ?>;
+
+  if (dailyEl) {
+    const barColors = labels.map((_, i) => `hsl(${(i * 30) % 360} 72% 55%)`);
+    const borderColors = labels.map((_, i) => `hsl(${(i * 30) % 360} 70% 40%)`);
+    new Chart(dailyEl.getContext('2d'), {
+      type: 'bar',
+      data: { labels: labels, datasets: [{ label: 'Daily Sales (₱)', data: values, backgroundColor: barColors, borderColor: borderColors, borderWidth: 1 }] },
+      options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } }, plugins: { legend: { display: false } } }
+    });
   }
+
+  // Scroll to transactionsPage if anchor present
+  if (location.hash === '#transactionsPage') {
+    setTimeout(() => {
+      const el = document.getElementById('transactionsPage');
+      if (el) {
+        const headerOffset = 30;
+        const top = el.getBoundingClientRect().top + window.scrollY - headerOffset;
+        window.scrollTo({ top: top, behavior: 'smooth' });
+      }
+    }, 60);
+  }
+
+  // Purchased products modal (populate)
+  const purchasedProducts = <?= json_encode($purchased_products) ?>;
+  const modal = document.getElementById('productsModal');
+  const modalClose = document.getElementById('productsModalClose');
+  const viewBtn = document.getElementById('viewProductsBtn');
+  const productsTbody = document.querySelector('#productsModalBody');
+
+  function openProductsModal() {
+    productsTbody.innerHTML = '';
+    if (!purchasedProducts || purchasedProducts.length === 0) {
+      productsTbody.innerHTML = '<tr><td colspan="2" style="text-align:center; color:#666; padding:14px;">No products found for the current filter.</td></tr>';
+    } else {
+      purchasedProducts.forEach(p => {
+        const tr = document.createElement('tr');
+        const nameTd = document.createElement('td'); nameTd.textContent = p.product_name;
+        const qtyTd = document.createElement('td'); qtyTd.style.textAlign = 'right'; qtyTd.textContent = Number(p.total_qty).toLocaleString();
+        tr.appendChild(nameTd); tr.appendChild(qtyTd); productsTbody.appendChild(tr);
+      });
+    }
+    if (modal) modal.style.display = 'flex';
+  }
+  function closeProductsModal() { if (modal) modal.style.display = 'none'; }
+  if (viewBtn) viewBtn.addEventListener('click', openProductsModal);
+  if (modalClose) modalClose.addEventListener('click', closeProductsModal);
+  if (modal) modal.addEventListener('click', (e) => { if (e.target === modal) closeProductsModal(); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeProductsModal(); });
+
+  // Download PDF (simple export based on $all_transactions)
+  const downloadBtn = document.getElementById('downloadPDF');
+  if (downloadBtn) {
+    downloadBtn.addEventListener('click', () => {
+      const { jsPDF } = window.jspdf;
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      pdf.setFontSize(18); pdf.setFont(undefined, 'bold'); pdf.text('Onsite Transactions Report', 105, 20, { align: 'center' });
+      pdf.setFontSize(10); pdf.setFont(undefined, 'normal'); const currentDate = new Date().toLocaleDateString(); pdf.text(`Generated on: ${currentDate}`, 105, 28, { align: 'center' });
+      pdf.setDrawColor(0); pdf.setLineWidth(0.5); pdf.line(20, 35, 190, 35);
+
+      // Table header
+      let y = 45; pdf.setFontSize(9); pdf.setFont(undefined,'bold');
+      const headers = ['Transaction ID','User','Total','Date','Source']; const colWidths = [30,30,30,60,30];
+      let x = 20; pdf.setFillColor(240,240,240); pdf.rect(20, y-5, 170, 7, 'F'); pdf.setTextColor(0);
+      headers.forEach((h, idx) => { pdf.text(h, x+2, y); x += colWidths[idx]; }); y += 8; pdf.setFont(undefined,'normal');
+
+      const rows = <?= json_encode($all_transactions) ?>;
+      rows.forEach(r => {
+        if (y > 270) { pdf.addPage(); y = 20; }
+        x = 20; const cells = [r.transaction_id, r.user_id, '₱' + parseFloat(r.total_amount).toFixed(2), r.transaction_date, r.source];
+        cells.forEach((c, idx) => { pdf.text(String(c), x+2, y); x += colWidths[idx]; }); y += 7;
+      });
+
+      pdf.save('Onsite_Transactions_Report.pdf');
+    });
+  }
+
 });
 </script>
 

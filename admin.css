@@ -129,7 +129,6 @@ nav .menu a::before {
 
 nav .menu a:hover {
   color: var(--accent-gold);
-  text-shadow: 0 0 10px rgba(255, 204, 0, 0.5);
   transform: translateY(-2px);
 }
 
