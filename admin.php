@@ -50,6 +50,36 @@ if (isset($_GET['get_stock_logs'])) {
   echo json_encode($logs);
   exit();
 }
+
+// Endpoint: return count of online orders (pending/new)
+if (isset($_GET['online_order_count'])) {
+  // return total pending and new-since-last-seen counts
+  $total_res = $conn->query("SELECT COUNT(*) AS cnt FROM transactions WHERE source = 'online' AND (status IS NULL OR status <> 'success')");
+  $total_cnt = 0;
+  if ($total_res) { $r = $total_res->fetch_assoc(); $total_cnt = intval($r['cnt'] ?? 0); }
+
+  $new_cnt = 0;
+  if (isset($_SESSION['online_orders_last_seen']) && $_SESSION['online_orders_last_seen']) {
+    $last = $conn->real_escape_string($_SESSION['online_orders_last_seen']);
+    $new_res = $conn->query("SELECT COUNT(*) AS cnt FROM transactions WHERE source = 'online' AND (status IS NULL OR status <> 'success') AND transaction_date > '$last'");
+    if ($new_res) { $rr = $new_res->fetch_assoc(); $new_cnt = intval($rr['cnt'] ?? 0); }
+  } else {
+    // if never seen, all pending are 'new'
+    $new_cnt = $total_cnt;
+  }
+
+  header('Content-Type: application/json');
+  echo json_encode(['total' => $total_cnt, 'new' => $new_cnt]);
+  exit();
+}
+
+// Endpoint: acknowledge (mark) online orders as seen for this admin session
+if (isset($_GET['ack_online_orders'])) {
+  $_SESSION['online_orders_last_seen'] = date('Y-m-d H:i:s');
+  header('Content-Type: application/json');
+  echo json_encode(['ok' => true, 'seen_at' => $_SESSION['online_orders_last_seen']]);
+  exit();
+}
 /* ---------------- ADD PRODUCT ---------------- */
 if (isset($_POST['add_product'])) {
     $name = $conn->real_escape_string($_POST['name']);
@@ -254,6 +284,26 @@ $low_stock_query = "
   ORDER BY stock ASC
 ";
 $low_stock = $conn->query($low_stock_query);
+
+// initial online orders new-count (since last seen) for rendering nav badge
+$online_orders_count = 0;
+$online_orders_total = 0;
+$res_count = $conn->query("SELECT COUNT(*) AS cnt FROM transactions WHERE source = 'online' AND (status IS NULL OR status <> 'success')");
+if ($res_count) {
+  $r = $res_count->fetch_assoc();
+  $online_orders_total = intval($r['cnt'] ?? 0);
+}
+if (isset($_SESSION['online_orders_last_seen']) && $_SESSION['online_orders_last_seen']) {
+  $ls = $conn->real_escape_string($_SESSION['online_orders_last_seen']);
+  $res_new = $conn->query("SELECT COUNT(*) AS cnt FROM transactions WHERE source = 'online' AND (status IS NULL OR status <> 'success') AND transaction_date > '$ls'");
+  if ($res_new) {
+    $rr = $res_new->fetch_assoc();
+    $online_orders_count = intval($rr['cnt'] ?? 0);
+  }
+} else {
+  // first visit: treat all pending as new
+  $online_orders_count = $online_orders_total;
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -271,7 +321,10 @@ $low_stock = $conn->query($low_stock_query);
   <div class="logo">Admin Dashboard</div>
   <div class="menu">
     <a href="customer_orders.php">Sales</a>
-    <a href="orders.php">Orders</a>
+    <div class="orders-top-container">
+      <a href="orders.php" id="ordersLink" onclick="ackOnlineOrders()">Orders</a>
+      <span id="ordersBadge" class="orders-badge <?= $online_orders_count > 0 ? '' : 'hidden' ?>"><?= $online_orders_count > 0 ? $online_orders_count : '' ?></span>
+    </div>
     <a href="logout.php" class="logout-btn">Logout</a>
   </div>
 </nav>
@@ -972,6 +1025,77 @@ window.addEventListener('click', function(e) {
 <a href="pos.php" class="pos-float-btn" title="Open POS">
   🛒 POS
 </a>
+</body>
+<script>
+// Poll server for online orders count and show toast when new orders arrive
+(function(){
+  let lastCount = Number(<?= $online_orders_count ?> || 0);
+  const badge = document.getElementById('ordersBadge');
 
+  // ack function used by Orders link
+  window.ackOnlineOrders = function() {
+    try {
+      // prefer sendBeacon for navigation-safe ack
+      if (navigator.sendBeacon) {
+        navigator.sendBeacon('admin.php?ack_online_orders=1');
+      } else {
+        fetch('admin.php?ack_online_orders=1', { method: 'GET', keepalive: true }).catch(()=>{});
+      }
+      // hide badge immediately when clicking Orders
+      if (badge) { badge.classList.add('hidden'); badge.textContent = ''; }
+      lastCount = 0;
+    } catch (e) { console.error(e); }
+  };
+
+  function showToast(msg) {
+    const t = document.createElement('div');
+    t.className = 'orders-toast';
+    t.textContent = msg;
+    document.body.appendChild(t);
+    setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 500); }, 5000);
+  }
+
+  function updateBadge(count) {
+    if (!badge) return;
+    if (count > 0) {
+      badge.textContent = count;
+      badge.classList.remove('hidden');
+    } else {
+      badge.textContent = '';
+      badge.classList.add('hidden');
+    }
+  }
+
+  async function check() {
+    try {
+      const res = await fetch('admin.php?online_order_count=1', {cache: 'no-store'});
+      if (!res.ok) return;
+      const data = await res.json();
+      const newCount = Number(data.new || 0);
+      const totalCount = Number(data.total || 0);
+      if (newCount > lastCount) {
+        const diff = newCount - lastCount;
+        showToast(`New online order${diff>1?'s':''}: ${diff}`);
+        const original = document.title;
+        document.title = `(${newCount}) ` + original;
+        setTimeout(() => { document.title = original; }, 5000);
+      }
+      lastCount = newCount;
+      updateBadge(newCount);
+    } catch (e) {
+      // ignore network errors silently
+      console.error('Order poll failed', e);
+    }
+  }
+
+  // initial badge state
+  updateBadge(lastCount);
+  // poll every 8 seconds
+  setInterval(check, 8000);
+  // check on page load shortly after DOM ready
+  setTimeout(check, 1200);
+})();
+</script>
+</html>
 </body>
 </html>

@@ -134,21 +134,12 @@ nav .menu a:hover::before {
 }
 
 nav .menu a.logout-btn {
-  background: linear-gradient(45deg, var(--danger-red), #c0392b);
   color: white;
   padding: 10px 20px;
   border-radius: 25px;
   font-weight: 700;
   transition: var(--transition);
-  box-shadow: 0 4px 15px rgba(231, 76, 60, 0.3);
   text-decoration: none;
-}
-
-nav .menu a.logout-btn:hover {
-  background: linear-gradient(45deg, #c0392b, #a93226);
-  transform: translateY(-3px);
-  box-shadow: 0 8px 25px rgba(231, 76, 60, 0.4);
-  text-decoration: none !important;
 }
 
 /* ==============================
@@ -1854,4 +1845,55 @@ nav .menu a.logout-btn:hover {
     padding: 12px 20px;
     font-size: 14px;
   }
+}
+
+/* Orders badge positioned over Orders link (top-right of the button) */
+.orders-top-container {
+  position: relative;
+  display: inline-block;
+  margin-left: 8px;
+}
+
+.orders-top-container a#ordersLink {
+  position: relative;
+  z-index: 1;
+  padding-right: 8px; /* keep some room for badge */
+}
+
+.orders-badge {
+  position: absolute;
+  /* nudge to overlap the final "s" in the Orders label */
+  top: -6px;
+  right: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 6px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: #fff;
+  background: linear-gradient(45deg,#ff4d4f,#c40000);
+  border-radius: 999px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.18);
+  line-height: 1;
+  text-align: center;
+  z-index: 2;
+  transform: translateX(-6px); /* slight left overlap to sit on top of the letter */
+}
+
+.orders-badge.hidden { display: none; }
+
+.orders-toast {
+  position: fixed;
+  right: 20px;
+  bottom: 24px;
+  background: linear-gradient(90deg,#1e3a8a,#2b5fb0);
+  color: #fff;
+  padding: 12px 18px;
+  border-radius: 10px;
+  box-shadow: 0 8px 30px rgba(2,6,23,0.2);
+  z-index: 12000;
+  font-weight:700;
 }

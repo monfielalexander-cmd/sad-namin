@@ -145,6 +145,7 @@ $transactions = $conn->query($query);
             <th>Total</th>
             <th>Date</th>
             <th>Status</th>
+            <th>Items</th>
             <th>Action</th>
         </tr>
 
@@ -154,6 +155,16 @@ $transactions = $conn->query($query);
                     $customer_name = trim(($row['first_name'] ?? '') . ' ' . ($row['last_name'] ?? ''));
                     if ($customer_name === '') $customer_name = 'Guest';
                     $isSuccess = strtolower($row['status']) === 'success';
+
+                    // fetch items for this transaction to embed in the row for the items modal
+                    $txn_id = intval($row['transaction_id']);
+                    $items = [];
+                    $items_q = $conn->query("SELECT ti.quantity, ti.price, ti.product_id, COALESCE(ti.product_name, p.name) AS name FROM transaction_items ti LEFT JOIN products_ko p ON ti.product_id = p.id WHERE ti.transaction_id = $txn_id");
+                    if ($items_q) {
+                        while ($it = $items_q->fetch_assoc()) {
+                            $items[] = $it;
+                        }
+                    }
                 ?>
                 <tr>
                     <td><?= $row['transaction_id'] ?></td>
@@ -182,6 +193,9 @@ $transactions = $conn->query($query);
                         <span class="status-badge <?= strtolower($row['status']) ?>">
                             <?= htmlspecialchars($row['status']) ?>
                         </span>
+                    </td>
+                    <td>
+                        <button class="view-items" data-items='<?= htmlspecialchars(json_encode($items), ENT_QUOTES) ?>'>View</button>
                     </td>
                     <td>
                         <label class="switch">
@@ -215,6 +229,28 @@ $transactions = $conn->query($query);
     </div>
     <?php endif; ?>
 
+</div>
+
+<!-- ITEMS MODAL -->
+<div id="itemsModal" class="modal" style="display:none;">
+    <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="itemsModalTitle">
+        <div class="modal-header">
+            <div>
+                <h3 id="itemsModalTitle">Order Items</h3>
+            </div>
+        </div>
+        <div class="table-wrapper">
+            <table class="products-table" style="width:100%;">
+                <thead>
+                    <tr><th>Product</th><th style="width:100px; text-align:right;">Qty</th><th style="width:120px; text-align:right;">Price</th><th style="width:120px; text-align:right;">Subtotal</th></tr>
+                </thead>
+                <tbody id="modalItemsBody"></tbody>
+            </table>
+        </div>
+        <div class="modal-footer">
+            <button class="close-btn footer-close" id="itemsFooterClose">Close</button>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -254,6 +290,79 @@ document.querySelectorAll('.status-toggle').forEach(toggle => {
         });
     });
 });
+
+// ----- Items modal wiring -----
+document.querySelectorAll('.view-items').forEach(btn => {
+    btn.addEventListener('click', function() {
+        try {
+            const items = JSON.parse(this.getAttribute('data-items') || '[]');
+            const body = document.getElementById('modalItemsBody');
+            body.innerHTML = '';
+            if (!items || items.length === 0) {
+                body.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#666; padding:14px;">No items for this order.</td></tr>';
+            } else {
+                        items.forEach(it => {
+                            const tr = document.createElement('tr');
+
+                            const tdName = document.createElement('td');
+                            const nameDiv = document.createElement('div');
+                            nameDiv.className = 'item-name';
+                            nameDiv.textContent = it.name || '—';
+                            tdName.appendChild(nameDiv);
+                            // optionally display size/variant (as plain text, no link)
+                            if (it.size || it.variant) {
+                                const sizeDiv = document.createElement('div');
+                                sizeDiv.className = 'item-size';
+                                sizeDiv.textContent = it.size ? String(it.size) : String(it.variant);
+                                tdName.appendChild(sizeDiv);
+                            }
+
+                            const tdQty = document.createElement('td');
+                            tdQty.style.textAlign = 'right';
+                            tdQty.textContent = Number(it.quantity || 0).toLocaleString();
+
+                            const tdPrice = document.createElement('td');
+                            tdPrice.style.textAlign = 'right';
+                            tdPrice.textContent = '₱' + Number(it.price || 0).toLocaleString(undefined, {minimumFractionDigits:2});
+
+                            const tdSubtotal = document.createElement('td');
+                            tdSubtotal.style.textAlign = 'right';
+                            const subtotal = (Number(it.quantity || 0) * Number(it.price || 0));
+                            tdSubtotal.textContent = '₱' + Number(subtotal).toLocaleString(undefined, {minimumFractionDigits:2});
+
+                            tr.appendChild(tdName);
+                            tr.appendChild(tdQty);
+                            tr.appendChild(tdPrice);
+                            tr.appendChild(tdSubtotal);
+                            body.appendChild(tr);
+                        });
+            }
+            const modal = document.getElementById('itemsModal');
+            modal.style.display = 'flex';
+            modal.classList.add('show');
+            modal.setAttribute('aria-hidden', 'false');
+        } catch (err) {
+            console.error('Failed to parse items JSON', err);
+            alert('Unable to display items for this order.');
+        }
+    });
+});
+
+function closeItemsModal() {
+    const modal = document.getElementById('itemsModal');
+    if (!modal || !modal.classList.contains('show')) return;
+    modal.classList.add('closing');
+    modal.setAttribute('aria-hidden', 'true');
+    setTimeout(() => { modal.classList.remove('show'); modal.classList.remove('closing'); modal.style.display = 'none'; }, 260);
+}
+
+const itemsModalClose = document.getElementById('itemsModalClose');
+const itemsFooterClose = document.getElementById('itemsFooterClose');
+const itemsModal = document.getElementById('itemsModal');
+if (itemsModalClose) itemsModalClose.addEventListener('click', closeItemsModal);
+if (itemsFooterClose) itemsFooterClose.addEventListener('click', closeItemsModal);
+if (itemsModal) itemsModal.addEventListener('click', (e) => { if (e.target === itemsModal) closeItemsModal(); });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeItemsModal(); });
 </script>
 
 </body>
