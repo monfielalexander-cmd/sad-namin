@@ -13,25 +13,16 @@ if ($conn->connect_error) {
 
 $selected_category = isset($_GET['category']) ? $conn->real_escape_string($_GET['category']) : '';
 if (!empty($selected_category)) {
-    $products = $conn->query("
-        SELECT p.*, 
-        (SELECT COUNT(*) FROM product_variants WHERE product_id = p.id) as variant_count,
-        (SELECT SUM(stock) FROM product_variants WHERE product_id = p.id) as total_variant_stock
-        FROM products_ko p
-        WHERE p.archive = 0 AND p.category = '$selected_category' 
-        ORDER BY p.id DESC
-    ");
 } else {
-    $products = $conn->query("
-        SELECT p.*, 
-        (SELECT COUNT(*) FROM product_variants WHERE product_id = p.id) as variant_count,
-        (SELECT SUM(stock) FROM product_variants WHERE product_id = p.id) as total_variant_stock
-        FROM products_ko p
-        WHERE p.archive = 0 
-        ORDER BY p.id DESC
-    ");
 }
-$categories = $conn->query("SELECT DISTINCT category FROM products_ko WHERE category IS NOT NULL AND category != ''");
+$products = $conn->query("
+    SELECT p.*, 
+    (SELECT COUNT(*) FROM product_variants WHERE product_id = p.id) as variant_count,
+    (SELECT SUM(stock) FROM product_variants WHERE product_id = p.id) as total_variant_stock
+    FROM products_ko p
+    WHERE p.archive = 0 
+    ORDER BY p.id DESC
+  ");
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -51,23 +42,12 @@ $categories = $conn->query("SELECT DISTINCT category FROM products_ko WHERE cate
   </div>
 </nav>
 
-<!-- ✅ Enhanced Category Filter -->
-<div class="filter-container">
-  <form method="GET">
-    <label for="category">Filter by Category:</label>
-    <select name="category" id="category" onchange="this.form.submit()">
-      <option value="">All Categories</option>
-      <?php if ($categories && $categories->num_rows > 0): ?>
-        <?php while ($cat = $categories->fetch_assoc()): ?>
-          <option value="<?= htmlspecialchars($cat['category']) ?>" 
-            <?= ($selected_category === $cat['category']) ? 'selected' : '' ?>>
-            <?= htmlspecialchars($cat['category']) ?>
-          </option>
-        <?php endwhile; ?>
-      <?php endif; ?>
-    </select>
-  </form>
-</div>
+  <div class="filter-container">
+    <form method="GET" onsubmit="return false;">
+      <label for="posSearch" class="search-label">Search products:</label>
+      <input type="search" id="posSearch" name="search" class="search-input" placeholder="Search by name, category or description">
+    </form>
+  </div>
 
 <div class="product-grid">
   <?php if ($products && $products->num_rows > 0): ?>
@@ -757,3 +737,46 @@ function submitTransactionToServer(transactionData) {
 
 </body>
 </html>
+
+<script>
+  (function() {
+    const searchInput = document.getElementById('posSearch');
+    if (!searchInput) return;
+
+    function debounce(fn, delay) {
+      let t;
+      return function(...args) {
+        clearTimeout(t);
+        t = setTimeout(() => fn.apply(this, args), delay);
+      };
+    }
+
+    function filterProducts() {
+      const q = searchInput.value.trim().toLowerCase();
+      const cards = document.querySelectorAll('.product-card');
+      if (!q) {
+        cards.forEach(c => c.style.display = '');
+        return;
+      }
+
+      // Match only against the product name (data-name)
+      cards.forEach(card => {
+        const name = (card.dataset.name || '').toLowerCase();
+        if (name === q || name.includes(q)) {
+          card.style.display = '';
+        } else {
+          card.style.display = 'none';
+        }
+      });
+    }
+
+    const debouncedFilter = debounce(filterProducts, 150);
+    searchInput.addEventListener('input', debouncedFilter);
+    searchInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        searchInput.value = '';
+        filterProducts();
+      }
+    });
+  })();
+</script>

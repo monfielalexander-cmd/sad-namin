@@ -87,15 +87,16 @@ body {
   text-decoration: none;
   color: white;
   background: linear-gradient(45deg, var(--primary-blue), var(--secondary-blue));
-  padding: 8px 14px;
-  border-radius: 18px;
+  padding: 6px 10px;
+  border-radius: 14px;
   transition: var(--transition);
   font-weight: 600;
-  letter-spacing: 0.5px;
-  box-shadow: 0 3px 10px rgba(0, 64, 128, 0.25);
+  letter-spacing: 0.45px;
+  box-shadow: 0 2px 8px rgba(0, 64, 128, 0.2);
+  text-transform: uppercase;
   position: relative;
   overflow: hidden;
-  font-size: var(--font-size-sm);
+  font-size: 0.88rem;
 }
 
 .back-btn::before {
@@ -112,7 +113,7 @@ body {
 .back-btn:hover {
   background: linear-gradient(45deg, var(--secondary-blue), #0080ff);
   transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(0, 64, 128, 0.4);
+  box-shadow: 0 6px 18px rgba(0, 64, 128, 0.32);
 }
 
 .back-btn:hover::before {

@@ -500,16 +500,6 @@ h3 {
   left: 100%;
 }
 
-/* Top buttons container (Back / Download) */
-.top-buttons {
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  gap:15px;
-  margin-bottom:25px;
-  flex-wrap:wrap;
-}
-
 
 /* Filter form and inputs */
 .filter-form { display:flex; gap:12px; align-items:center; margin-bottom:12px; flex-wrap:wrap; }
@@ -861,7 +851,7 @@ h3 {
     <!-- PRODUCTS MODAL -->
     <div id="productsModal" class="modal-overlay">
       <div class="modal-box">
-        <h3>Purchased Products</h3>
+        <h3>Most Purchased Products</h3>
         <div class="modal-content">
           <div class="table-wrapper">
             <table>

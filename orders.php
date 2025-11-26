@@ -77,7 +77,8 @@ $current_page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
 if ($current_page < 1) $current_page = 1;
 $offset = ($current_page - 1) * $limit;
 
-$total_result = $conn->query("SELECT COUNT(*) AS total FROM transactions");
+$where_clause = "WHERE (source = 'online')"; // show only non-POS (online) transactions
+$total_result = $conn->query("SELECT COUNT(*) AS total FROM transactions " . $where_clause);
 $total_records = (int) $total_result->fetch_assoc()['total'];
 $total_pages = ($total_records > 0) ? ceil($total_records / $limit) : 1;
 
@@ -97,6 +98,7 @@ $query = "
         t.status
     FROM transactions t
     LEFT JOIN users u ON t.user_id = u.id
+    " . $where_clause . "
     ORDER BY t.transaction_date DESC
     LIMIT $limit OFFSET $offset
 ";

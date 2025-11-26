@@ -428,19 +428,9 @@ if ($transactions_result) {
   <div class="left-panel">
     
     <div class="filter-section">
-      <form method="GET">
-        <label for="category">Filter by Category:</label>
-        <select name="category" id="category" onchange="this.form.submit()">
-          <option value="">All Categories</option>
-          <?php if ($categories && $categories->num_rows > 0): ?>
-            <?php while ($cat = $categories->fetch_assoc()): ?>
-              <option value="<?= htmlspecialchars($cat['category']) ?>" 
-                <?= ($selected_category === $cat['category']) ? 'selected' : '' ?>>
-                <?= htmlspecialchars($cat['category']) ?>
-              </option>
-            <?php endwhile; ?>
-          <?php endif; ?>
-        </select>
+      <form method="GET" onsubmit="return false;">
+        <label for="productSearch" class="search-label">Search products:</label>
+        <input type="search" id="productSearch" name="search" class="search-input" placeholder="Search by name, description or category">
       </form>
     </div>
 
@@ -930,6 +920,48 @@ function selectSize(productId, variantId, size) {
   document.getElementById('hidden_size').value = size;
   document.getElementById('addVariantForm').submit();
 }
+
+(function() {
+  const searchInput = document.getElementById('productSearch');
+  if (!searchInput) return;
+
+  function debounce(fn, delay) {
+    let t;
+    return function(...args) {
+      clearTimeout(t);
+      t = setTimeout(() => fn.apply(this, args), delay);
+    };
+  }
+
+  function filterProducts() {
+    const q = searchInput.value.trim().toLowerCase();
+    const cards = document.querySelectorAll('.product-card');
+    if (!q) {
+      cards.forEach(c => c.style.display = '');
+      return;
+    }
+
+    cards.forEach(card => {
+      const nameEl = card.querySelector('h4') || card.querySelector('h3');
+      const name = nameEl ? nameEl.textContent.toLowerCase() : '';
+      const whole = card.textContent.toLowerCase();
+      if (name.includes(q) || whole.includes(q)) {
+        card.style.display = '';
+      } else {
+        card.style.display = 'none';
+      }
+    });
+  }
+
+  const debouncedFilter = debounce(filterProducts, 180);
+  searchInput.addEventListener('input', debouncedFilter);
+  searchInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      searchInput.value = '';
+      filterProducts();
+    }
+  });
+})();
 </script>
 
 </body>

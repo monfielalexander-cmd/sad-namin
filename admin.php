@@ -500,7 +500,7 @@ function closeAddProductModal() {
     </div>
     <div id="stockLogContent" style="padding:16px;">Loading...</div>
     <div class="modal-footer">
-      <button type="button" onclick="closeStockLogModal()" class="cancel-btn">Close</button>
+      <button type="button" onclick="closeStockLogModal()" class="cancellogs-btn">Close</button>
     </div>
   </div>
 </div>
@@ -673,15 +673,32 @@ function closeAddProductModal() {
 
 <!-- 🔍 LIVE SEARCH -->
 <script>
-// Improved search: matches any cell (name, category, price, etc.)
-document.getElementById("searchInput").addEventListener("keyup", function() {
+// Improved search: when user types one letter, show products whose Name starts with it;
+// when typing more than one character, fall back to a full-text (includes) match across the row.
+document.getElementById("searchInput").addEventListener("input", function() {
   const filter = this.value.trim().toLowerCase();
-  const rows = document.querySelectorAll("#productTable tr:not(:first-child)");
+  const rows = document.querySelectorAll("#productTable tr:not(:first-child), #singleProductTable tr:not(:first-child)");
   rows.forEach(row => {
+    if (!filter) { row.style.display = ""; return; }
+
+    // Prefer checking specific cells so single-product rows reliably match
+    const nameCell = row.querySelector('td[data-label="Name"]') || row.querySelector('td:nth-child(2)');
+    const categoryCell = row.querySelector('td[data-label="Category"]') || row.querySelector('td:nth-child(3)');
+    const priceCell = row.querySelector('td[data-label="Price"]') || row.querySelector('td:nth-child(4)');
+
+    const nameText = nameCell ? nameCell.textContent.trim().toLowerCase() : '';
+    const categoryText = categoryCell ? categoryCell.textContent.trim().toLowerCase() : '';
+    const priceText = priceCell ? priceCell.textContent.trim().toLowerCase() : '';
+
     let match = false;
-    row.querySelectorAll('td').forEach(cell => {
-      if (cell.textContent.toLowerCase().includes(filter)) match = true;
-    });
+    if (filter.length === 1) {
+      // single-character: only match names that start with the character
+      match = nameText.startsWith(filter);
+    } else {
+      // multi-character: match name, category, price, or any text in the row
+      match = nameText.includes(filter) || categoryText.includes(filter) || priceText.includes(filter) || row.textContent.toLowerCase().includes(filter);
+    }
+
     row.style.display = match ? "" : "none";
   });
 });

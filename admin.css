@@ -1153,14 +1153,15 @@ nav .menu a.logout-btn:hover {
   background: linear-gradient(45deg, var(--success-green), #2ecc71);
   color: white;
   border: none;
-  padding: 8px 16px;
-  border-radius: 16px;
+  padding: 6px 12px;
+  border-radius: 12px;
   cursor: pointer;
-  font-size: 0.95rem;
+  font-size: 0.85rem;
   font-weight: 600;
   transition: var(--transition);
-  box-shadow: 0 3px 10px rgba(39, 174, 96, 0.22);
-  letter-spacing: 0.4px;
+  box-shadow: 0 2px 8px rgba(39, 174, 96, 0.18);
+  text-transform: uppercase;
+  letter-spacing: 0.35px;
   position: relative;
   overflow: hidden;
 }
@@ -1179,7 +1180,7 @@ nav .menu a.logout-btn:hover {
 .add-product-btn:hover {
   background: linear-gradient(45deg, #2ecc71, #27ae60);
   transform: translateY(-2px);
-  box-shadow: 0 6px 18px rgba(39, 174, 96, 0.32);
+  box-shadow: 0 4px 12px rgba(39, 174, 96, 0.26);
 }
 
 .add-product-btn:hover::before {
@@ -1255,7 +1256,7 @@ nav .menu a.logout-btn:hover {
 .modal-header {
   background: linear-gradient(135deg, var(--primary-blue) 0%, #0056b3 100%);
   color: white;
-  padding: 25px 30px;
+  padding: 25px 30px 44px;
   border-radius: var(--border-radius) var(--border-radius) 0 0;
   position: relative;
   text-align: center;
@@ -1636,6 +1637,29 @@ nav .menu a.logout-btn:hover {
   transform: translateY(-1px);
 }
 
+.cancellogs-btn {
+  background: linear-gradient(145deg, #f8f9fa, #e9ecef);
+  color: var(--text-dark);
+  border: 2px solid rgba(108, 117, 125, 0.3);
+  padding: 15px 30px;
+  border-radius: 25px;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 600;
+  transition: var(--transition);
+  min-width: 140px;
+  margin-bottom: 15px;
+  letter-spacing: 0.5px;
+  box-shadow: 0 4px 15px rgba(108, 117, 125, 0.2);
+}
+
+.cancellogs-btn:hover {
+  background: linear-gradient(145deg, #e9ecef, #dee2e6);
+  border-color: rgba(108, 117, 125, 0.5);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(108, 117, 125, 0.3);
+}
+
 /* ==============================
    ENHANCED RESPONSIVE MODAL DESIGN
 ============================== */
@@ -1673,7 +1697,8 @@ nav .menu a.logout-btn:hover {
   }
 
   .modal-header {
-    padding: 20px 25px;
+    /* keep extra bottom space on smaller screens too */
+    padding: 20px 25px 36px;
     border-radius: 15px 15px 0 0;
   }
 
@@ -1742,7 +1767,8 @@ nav .menu a.logout-btn:hover {
   }
   
   .modal-header {
-    padding: 15px 20px;
+    /* ensure a bit of bottom spacing on very small screens */
+    padding: 15px 20px 28px;
     border-radius: 12px 12px 0 0;
   }
   

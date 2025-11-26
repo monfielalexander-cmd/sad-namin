@@ -55,6 +55,31 @@ while ($row = mysqli_fetch_assoc($all_transactions_result)) {
   $all_transactions[] = $row;
 }
 
+// AJAX endpoint: return transactions for a specific month (YYYY-MM)
+if (isset($_GET['ajax_month']) && $_GET['ajax_month'] == '1' && isset($_GET['month'])) {
+  $month_raw = mysqli_real_escape_string($conn, $_GET['month']);
+  $parts = explode('-', $month_raw);
+  if (count($parts) === 2) {
+    $y = intval($parts[0]);
+    $m = intval($parts[1]);
+    $q = "SELECT * FROM transactions WHERE source='online' AND YEAR(transaction_date)=$y AND MONTH(transaction_date)=$m ORDER BY transaction_date DESC";
+    $res = mysqli_query($conn, $q);
+    $rows = [];
+    if ($res) {
+      while ($r = mysqli_fetch_assoc($res)) {
+        $rows[] = $r;
+      }
+    }
+    header('Content-Type: application/json');
+    echo json_encode($rows);
+    exit;
+  } else {
+    header('Content-Type: application/json');
+    echo json_encode([]);
+    exit;
+  }
+}
+
 $monthly_sales_query = "
   SELECT 
     DATE_FORMAT(transaction_date, '%Y-%m') AS month,
@@ -298,15 +323,15 @@ if ($period === 'month' && $filter_month) {
     .back-btn, .download-btn {
       background: linear-gradient(45deg, var(--secondary-blue), #0080ff);
       color: white;
-      padding: 12px 20px;
-      border-radius: 25px;
+      padding: 8px 14px;
+      border-radius: 16px;
       text-decoration: none;
-      font-size: 0.9rem;
+      font-size: 0.85rem;
       font-weight: 600;
       transition: var(--transition);
-      box-shadow: 0 4px 15px rgba(0, 102, 204, 0.3);
+      box-shadow: 0 3px 10px rgba(0, 102, 204, 0.25);
       text-transform: uppercase;
-      letter-spacing: 0.5px;
+      letter-spacing: 0.4px;
       position: relative;
       overflow: hidden;
       border: none;
@@ -657,6 +682,8 @@ if ($period === 'month' && $filter_month) {
       .back-btn, .download-btn {
         width: 100%;
         text-align: center;
+        padding: 10px 12px;
+        font-size: 0.85rem;
       }
 
       table {
@@ -715,7 +742,10 @@ if ($period === 'month' && $filter_month) {
   <div class="container">
     <div class="top-buttons">
       <a href="admin.php" class="back-btn">← Back to Dashboard</a>
-      <button class="download-btn" id="downloadPDF">⬇ Download Report</button>
+      <div style="display:inline-flex; gap:8px; align-items:center;">
+        <input id="downloadMonth" type="month" title="Choose month to download (optional)" style="padding:8px 10px; border-radius:8px; border:1px solid rgba(0,64,128,0.12); background:#fff;">
+        <button class="download-btn" id="downloadPDF">⬇ Download Report</button>
+      </div>
     </div>
 
     <!-- PAGE 1: TRANSACTIONS -->
@@ -1043,227 +1073,204 @@ if ($period === 'month' && $filter_month) {
 
 
 <script>
-    // PDF Download - Clean Data Only
-    document.getElementById('downloadPDF').addEventListener('click', () => {
-      const { jsPDF } = window.jspdf;
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      
-      // Header
-      pdf.setFontSize(18);
-      pdf.setFont(undefined, 'bold');
-      pdf.text('ABETH HARDWARE', 105, 20, { align: 'center' });
-      
-      pdf.setFontSize(14);
-      pdf.text('Customer Orders Report (Online)', 105, 30, { align: 'center' });
-      
-      pdf.setFontSize(10);
-      pdf.setFont(undefined, 'normal');
-      const currentDate = new Date().toLocaleDateString();
-      pdf.text(`Generated on: ${currentDate}`, 105, 40, { align: 'center' });
-      
-      // Draw line separator
-      pdf.setDrawColor(0, 0, 0);
-      pdf.setLineWidth(0.5);
-      pdf.line(20, 45, 190, 45);
-      
-      // Table headers
-      let yPosition = 55;
-      pdf.setFontSize(9);
-      pdf.setFont(undefined, 'bold');
-      
-      const headers = ['Transaction ID', 'User ID', 'Total Amount (₱)', 'Transaction Date', 'Source'];
-      const colWidths = [30, 30, 35, 45, 25];
-      let xPosition = 20;
-      
-      // Draw header background
-      pdf.setFillColor(0, 0, 0);
-      pdf.rect(20, yPosition - 5, 165, 8, 'F');
-      
-      pdf.setTextColor(255, 255, 255);
-      headers.forEach((header, index) => {
-        pdf.text(header, xPosition + 2, yPosition, { maxWidth: colWidths[index] - 4 });
-        xPosition += colWidths[index];
-      });
-      
-      yPosition += 10;
-      pdf.setTextColor(0, 0, 0);
-      pdf.setFont(undefined, 'normal');
-      
-      // Get ALL transaction data from PHP and organize by month
-      const allTransactions = <?= json_encode($all_transactions) ?>;
-      
-      // Group transactions by month
-      const transactionsByMonth = {};
-      allTransactions.forEach(transaction => {
-        const date = new Date(transaction.transaction_date);
-        const monthYear = date.toLocaleDateString('en-US', { year: 'numeric', month: 'long' });
-        
-        if (!transactionsByMonth[monthYear]) {
-          transactionsByMonth[monthYear] = [];
-        }
-        transactionsByMonth[monthYear].push(transaction);
-      });
-      
-      // Sort months chronologically (newest first)
-      const sortedMonths = Object.keys(transactionsByMonth).sort((a, b) => {
-        return new Date(b) - new Date(a);
-      });
-      
-      let transactionRowIndex = 0;
-      
-      sortedMonths.forEach((monthYear) => {
-        const monthTransactions = transactionsByMonth[monthYear];
-        let monthlyTotal = 0;
-        
-        // Check if we need a new page for month header
-        if (yPosition > 250) {
-          pdf.addPage();
-          yPosition = 20;
-        }
-        
-        // Month Header
-        pdf.setFontSize(14);
-        pdf.setFont(undefined, 'bold');
-        pdf.setFillColor(0, 0, 0);
-        pdf.setTextColor(255, 255, 255);
-        pdf.rect(20, yPosition - 3, 165, 12, 'F');
-        pdf.text(monthYear, 105, yPosition + 5, { align: 'center' });
-        yPosition += 20;
-        
-        pdf.setTextColor(0, 0, 0);
-        pdf.setFont(undefined, 'normal');
-        
-        // Draw table headers for this month
-        pdf.setFontSize(9);
-        pdf.setFont(undefined, 'bold');
-        pdf.setFillColor(240, 240, 240);
-        pdf.rect(20, yPosition - 5, 165, 8, 'F');
-        pdf.setTextColor(0, 0, 0);
-        
-        let headerX = 20;
-        headers.forEach((header, headerIndex) => {
-          pdf.text(header, headerX + 2, yPosition, { maxWidth: colWidths[headerIndex] - 4 });
-          headerX += colWidths[headerIndex];
-        });
-        
-        yPosition += 10;
-        pdf.setFont(undefined, 'normal');
-        
-        // Add transactions for this month
-        monthTransactions.forEach((transaction) => {
-          if (yPosition > 270) { // Check if need new page
-            pdf.addPage();
-            yPosition = 20;
-            
-            // Redraw month header on new page
-            pdf.setFontSize(14);
-            pdf.setFont(undefined, 'bold');
-            pdf.setFillColor(0, 0, 0);
-            pdf.setTextColor(255, 255, 255);
-            pdf.rect(20, yPosition - 3, 165, 12, 'F');
-            pdf.text(`${monthYear} (continued)`, 105, yPosition + 5, { align: 'center' });
-            yPosition += 20;
-            
-            // Redraw headers
-            pdf.setFontSize(9);
-            pdf.setFont(undefined, 'bold');
-            pdf.setFillColor(240, 240, 240);
-            pdf.rect(20, yPosition - 5, 165, 8, 'F');
-            pdf.setTextColor(0, 0, 0);
-            
-            let headerX = 20;
-            headers.forEach((header, headerIndex) => {
-              pdf.text(header, headerX + 2, yPosition, { maxWidth: colWidths[headerIndex] - 4 });
-              headerX += colWidths[headerIndex];
-            });
-            
-            yPosition += 10;
-            pdf.setFont(undefined, 'normal');
-          }
-          
-          xPosition = 20;
-          
-          // Alternate row colors
-          if (transactionRowIndex % 2 === 0) {
-            pdf.setFillColor(250, 250, 250);
-            pdf.rect(20, yPosition - 3, 165, 7, 'F');
-          }
-          
-          // Add transaction data
-          const transactionData = [
-            transaction.transaction_id,
-            transaction.user_id,
-            '₱' + parseFloat(transaction.total_amount).toLocaleString('en-US', {minimumFractionDigits: 2}),
-            transaction.transaction_date,
-            transaction.source
-          ];
-          
-          transactionData.forEach((data, cellIndex) => {
-            pdf.text(data.toString(), xPosition + 2, yPosition, { maxWidth: colWidths[cellIndex] - 4 });
-            xPosition += colWidths[cellIndex];
-          });
-          
-          monthlyTotal += parseFloat(transaction.total_amount);
-          yPosition += 7;
-          transactionRowIndex++;
-        });
-        
-        // Monthly subtotal
-        yPosition += 3;
-        pdf.setFont(undefined, 'bold');
-        pdf.setFillColor(220, 220, 220);
-        pdf.rect(120, yPosition - 3, 65, 8, 'F');
-        pdf.text(`${monthYear} Total: ₱${monthlyTotal.toLocaleString('en-US', {minimumFractionDigits: 2})}`, 125, yPosition + 2);
-        yPosition += 15;
-        pdf.setFont(undefined, 'normal');
-      });
-      
-      // Summary section
-      yPosition += 10;
-      if (yPosition > 250) {
-        pdf.addPage();
-        yPosition = 20;
-      }
-      
-      // Draw separator line
-      pdf.setDrawColor(0, 0, 0);
-      pdf.line(20, yPosition, 190, yPosition);
-      yPosition += 10;
-      
-      pdf.setFont(undefined, 'bold');
-      pdf.setFontSize(12);
-      pdf.text('Summary', 20, yPosition);
-      yPosition += 10;
-      
-      pdf.setFont(undefined, 'normal');
-      pdf.setFontSize(10);
-      
-      const totalRecords = <?= $total_records ?>;
-      const totalRevenue = '<?= number_format($total_revenue, 2) ?>';
-      
-      pdf.text(`Total Transactions: ${totalRecords}`, 20, yPosition);
-      yPosition += 7;
-      pdf.text(`Total Revenue: ₱${totalRevenue}`, 20, yPosition);
-      
-      // Footer
-      const pageCount = pdf.internal.getNumberOfPages();
-      for (let i = 1; i <= pageCount; i++) {
-        pdf.setPage(i);
-        pdf.setFontSize(8);
-        pdf.setFont(undefined, 'normal');
-        pdf.setTextColor(100, 100, 100);
-        pdf.text(`Page ${i} of ${pageCount}`, 105, 290, { align: 'center' });
-        pdf.text('Abeth Hardware - Customer Orders Report', 105, 285, { align: 'center' });
-      }
-      
-      pdf.save('Customer_Orders_Report.pdf');
-    });
+    // NOTE: download handler moved into DOMContentLoaded so it can access embedded PHP data reliably.
 
     // Initialize chart on page load (no AJAX partials)
     document.addEventListener('DOMContentLoaded', function() {
       const dailyEl = document.getElementById('dailySalesChart');
       const labels = <?= json_encode($daily_labels) ?>;
       const values = <?= json_encode($daily_values) ?>;
+
+      // Embedded all transactions (reflects current page filter 'where' at PHP level)
+      const allTransactions = <?= json_encode($all_transactions) ?>;
+
+      // PDF generation helper: accepts an array of transactions (objects) and optional titleSuffix
+      function generatePDFFromTransactions(transactions, titleSuffix) {
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF('p', 'mm', 'a4');
+
+        // Header
+        pdf.setFontSize(18);
+        pdf.setFont(undefined, 'bold');
+        pdf.text('ABETH HARDWARE', 105, 20, { align: 'center' });
+
+        let subtitle = 'Customer Orders Report (Online)';
+        if (titleSuffix) subtitle += ' — ' + titleSuffix;
+        pdf.setFontSize(14);
+        pdf.text(subtitle, 105, 30, { align: 'center' });
+
+        pdf.setFontSize(10);
+        pdf.setFont(undefined, 'normal');
+        const currentDate = new Date().toLocaleDateString();
+        pdf.text(`Generated on: ${currentDate}`, 105, 40, { align: 'center' });
+
+        // Draw line separator
+        pdf.setDrawColor(0, 0, 0);
+        pdf.setLineWidth(0.5);
+        pdf.line(20, 45, 190, 45);
+
+        // Table headers
+        let yPosition = 55;
+        pdf.setFontSize(9);
+        pdf.setFont(undefined, 'bold');
+
+        const headers = ['Transaction ID', 'User ID', 'Total Amount (P)', 'Transaction Date', 'Source'];
+        // Keep total width <= 165 (printable area): 30+25+40+50+20 = 165
+        const colWidths = [30, 25, 40, 50, 20];
+        let xPosition = 20;
+
+        // Draw header background
+        pdf.setFillColor(0, 0, 0);
+        pdf.rect(20, yPosition - 5, 165, 8, 'F');
+
+        pdf.setTextColor(255, 255, 255);
+        // use a safe built-in font to avoid glyph/kerning issues
+        try { pdf.setFont('helvetica', 'bold'); } catch (e) { /* ignore if not supported */ }
+        headers.forEach((header, index) => {
+          pdf.text(header, xPosition + 2, yPosition, { maxWidth: colWidths[index] - 4 });
+          xPosition += colWidths[index];
+        });
+
+        yPosition += 10;
+        pdf.setTextColor(0, 0, 0);
+        pdf.setFont(undefined, 'normal');
+
+        // Group transactions by month-year for the PDF layout
+        const transactionsByMonth = {};
+        transactions.forEach(transaction => {
+          const date = new Date(transaction.transaction_date);
+          const monthYear = date.toLocaleDateString('en-US', { year: 'numeric', month: 'long' });
+          if (!transactionsByMonth[monthYear]) transactionsByMonth[monthYear] = [];
+          transactionsByMonth[monthYear].push(transaction);
+        });
+
+        const sortedMonths = Object.keys(transactionsByMonth).sort((a, b) => new Date(b) - new Date(a));
+        let transactionRowIndex = 0;
+
+        sortedMonths.forEach((monthYear) => {
+          const monthTransactions = transactionsByMonth[monthYear];
+          let monthlyTotal = 0;
+
+          if (yPosition > 250) { pdf.addPage(); yPosition = 20; }
+
+          // Month header
+          pdf.setFontSize(14);
+          pdf.setFont(undefined, 'bold');
+          pdf.setFillColor(0, 0, 0);
+          pdf.setTextColor(255, 255, 255);
+          pdf.rect(20, yPosition - 3, 165, 12, 'F');
+          pdf.text(monthYear, 105, yPosition + 5, { align: 'center' });
+          yPosition += 20;
+
+          pdf.setTextColor(0, 0, 0);
+          pdf.setFont(undefined, 'normal');
+
+          // Month table headers
+          pdf.setFontSize(9);
+          pdf.setFont(undefined, 'bold');
+          pdf.setFillColor(240, 240, 240);
+          pdf.rect(20, yPosition - 5, 165, 8, 'F');
+          pdf.setTextColor(0, 0, 0);
+          let headerX = 20;
+          headers.forEach((header, headerIndex) => { pdf.text(header, headerX + 2, yPosition, { maxWidth: colWidths[headerIndex] - 4 }); headerX += colWidths[headerIndex]; });
+          yPosition += 10;
+          pdf.setFont(undefined, 'normal');
+
+          monthTransactions.forEach((transaction) => {
+            if (yPosition > 270) {
+              pdf.addPage();
+              yPosition = 20;
+              pdf.setFontSize(14); pdf.setFont(undefined, 'bold'); pdf.setFillColor(0, 0, 0); pdf.setTextColor(255, 255, 255);
+              pdf.rect(20, yPosition - 3, 165, 12, 'F'); pdf.text(`${monthYear} (continued)`, 105, yPosition + 5, { align: 'center' }); yPosition += 20;
+              pdf.setFontSize(9); pdf.setFont(undefined, 'bold'); pdf.setFillColor(240, 240, 240); pdf.rect(20, yPosition - 5, 165, 8, 'F'); pdf.setTextColor(0,0,0);
+              let headerX2 = 20; headers.forEach((header, headerIndex) => { pdf.text(header, headerX2 + 2, yPosition, { maxWidth: colWidths[headerIndex] - 4 }); headerX2 += colWidths[headerIndex]; }); yPosition += 10; pdf.setFont(undefined, 'normal');
+            }
+
+            xPosition = 20;
+            if (transactionRowIndex % 2 === 0) { pdf.setFillColor(250, 250, 250); pdf.rect(20, yPosition - 3, 165, 7, 'F'); }
+
+            const amount = Number(transaction.total_amount || 0);
+            // format as ASCII 'P' with no space to avoid special-glyph rendering issues: e.g. P1,234.56
+            const formattedAmount = 'P' + amount.toLocaleString('en-US', { minimumFractionDigits: 2 });
+            const transactionData = [
+              String(transaction.transaction_id || ''),
+              String(transaction.user_id || ''),
+              formattedAmount,
+              String(transaction.transaction_date || ''),
+              String(transaction.source || '')
+            ];
+
+            transactionData.forEach((data, cellIndex) => { pdf.text(data.toString(), xPosition + 2, yPosition, { maxWidth: colWidths[cellIndex] - 4 }); xPosition += colWidths[cellIndex]; });
+
+            monthlyTotal += parseFloat(transaction.total_amount || 0);
+            yPosition += 7;
+            transactionRowIndex++;
+          });
+
+          yPosition += 3;
+          pdf.setFont(undefined, 'bold');
+          pdf.setFillColor(220, 220, 220);
+          pdf.rect(120, yPosition - 3, 65, 8, 'F');
+          pdf.text(`${monthYear} Total: P${monthlyTotal.toLocaleString('en-US', {minimumFractionDigits: 2})}`, 125, yPosition + 2);
+          yPosition += 15;
+          pdf.setFont(undefined, 'normal');
+        });
+
+        // Summary
+        yPosition += 10; if (yPosition > 250) { pdf.addPage(); yPosition = 20; }
+        pdf.setDrawColor(0, 0, 0); pdf.line(20, yPosition, 190, yPosition); yPosition += 10;
+        pdf.setFont(undefined, 'bold'); pdf.setFontSize(12); pdf.text('Summary', 20, yPosition); yPosition += 10;
+        pdf.setFont(undefined, 'normal'); pdf.setFontSize(10);
+
+        const totalRecords = transactions.length;
+        const totalRevenue = transactions.reduce((s, t) => s + (parseFloat(t.total_amount) || 0), 0);
+        pdf.text(`Total Transactions: ${totalRecords}`, 20, yPosition); yPosition += 7;
+        pdf.text(`Total Revenue: P${totalRevenue.toLocaleString('en-US', {minimumFractionDigits: 2})}`, 20, yPosition);
+
+        // Footer
+        const pageCount = pdf.internal.getNumberOfPages();
+        for (let i = 1; i <= pageCount; i++) {
+          pdf.setPage(i);
+          pdf.setFontSize(8);
+          pdf.setFont(undefined, 'normal');
+          pdf.setTextColor(100, 100, 100);
+          pdf.text(`Page ${i} of ${pageCount}`, 105, 290, { align: 'center' });
+          pdf.text('Abeth Hardware - Customer Orders Report', 105, 285, { align: 'center' });
+        }
+
+        pdf.save('Customer_Orders_Report.pdf');
+      }
+
+      // Download button: optionally fetch selected month (if any) then generate PDF
+      const downloadBtn = document.getElementById('downloadPDF');
+      const downloadMonthInput = document.getElementById('downloadMonth');
+      if (downloadBtn) {
+        downloadBtn.addEventListener('click', async () => {
+          // if month selected, fetch server-side limited dataset; otherwise use embedded allTransactions
+          const monthVal = downloadMonthInput && downloadMonthInput.value ? downloadMonthInput.value : '';
+          if (monthVal) {
+            // fetch transactions for chosen month via AJAX endpoint added in PHP
+            try {
+              const res = await fetch('customer_orders.php?ajax_month=1&month=' + encodeURIComponent(monthVal));
+              if (!res.ok) throw new Error('Network response not ok');
+              const data = await res.json();
+              // compute pretty month label
+              const parts = monthVal.split('-');
+              let pretty = monthVal;
+              if (parts.length === 2) {
+                pretty = new Date(parts[0], parts[1]-1, 1).toLocaleString('en-US', { month: 'long', year: 'numeric' });
+              }
+              generatePDFFromTransactions(data, pretty);
+            } catch (err) {
+              alert('Failed to fetch transactions for selected month. Please try again.');
+              console.error(err);
+            }
+          } else {
+            // use embedded allTransactions from PHP (reflects current page filter)
+            generatePDFFromTransactions(allTransactions, 'All Available');
+          }
+        });
+      }
 
       if (dailyEl) {
         // create a distinct color for each bar (repeats if more bars than palette)

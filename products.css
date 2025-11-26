@@ -570,16 +570,17 @@ body {
 
 form[method="GET"] {
   background: linear-gradient(145deg, #ffffff 0%, #f8faff 100%);
-  padding: 8px 15px;
-  margin: 10px 0 20px 0;
-  border-radius: 25px;
+  padding: 6px 10px; /* reduced vertical and horizontal padding to shrink height */
+  margin: 8px 0 16px 0;
+  border-radius: 22px;
   box-shadow: var(--shadow-light);
-  border: 1px solid rgba(0, 64, 128, 0.1);
+  border: 1px solid rgba(0, 64, 128, 0.08);
   display: inline-flex;
   align-items: center;
-  gap: 12px;
-  width: auto;
-  max-width: 350px;
+  gap: 10px;
+  width: 100%;
+  max-width: 720px;
+  height: 44px; /* fixed shorter height to reduce the "big" box */
 }
 
 form[method="GET"] label {
@@ -616,6 +617,39 @@ form[method="GET"] select:focus {
   background: white;
   transform: translateY(-1px);
 }
+
+/* Search input in filter area */
+.search-input {
+  flex: 1 1 320px;
+  max-width: 620px;
+  padding: 6px 10px; /* smaller padding for shorter height */
+  border: 1px solid rgba(0, 64, 128, 0.10);
+  border-radius: 18px;
+  font-size: 0.92rem;
+  color: var(--text-dark);
+  background: rgba(248, 250, 255, 0.95);
+  transition: var(--transition);
+  height: 32px;
+  line-height: 1.1;
+}
+.search-input:focus {
+  outline: none;
+  border-color: var(--accent-gold);
+  box-shadow: 0 0 0 4px rgba(255, 204, 0, 0.10);
+}
+
+/* Search label (inline next to input) */
+.search-label {
+  font-weight: 600;
+  color: var(--primary-blue);
+  margin-right: 8px;
+  white-space: nowrap;
+  font-size: 0.92rem; /* slightly smaller label to match reduced height */
+  line-height: 1;
+}
+
+/* filter-label removed - category select removed */
+
 
 .product-grid {
   display: grid;
@@ -1602,6 +1636,11 @@ form[method="GET"] select:focus {
     grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
     gap: 15px;
     padding: 15px 0;
+  }
+
+  .search-input {
+    max-width: 100%;
+    width: 100%;
   }
   
   .product-card {
