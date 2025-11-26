@@ -1045,7 +1045,7 @@ if ($period === 'month' && $filter_month) {
       <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="productsModalTitle">
         <div class="modal-header">
           <div>
-            <h3 id="productsModalTitle">Purchased Products</h3>
+            <h3 id="productsModalTitle">Most Purchased Products</h3>
           </div>
           <button id="productsModalClose" class="modal-close" aria-label="Close purchased products">×</button>
         </div>

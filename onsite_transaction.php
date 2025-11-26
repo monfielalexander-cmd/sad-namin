@@ -737,7 +737,6 @@ h3 {
       <thead>
         <tr>
           <th>Transaction ID</th>
-          <th>User</th>
           <th>Total Amount (₱)</th>
           <th>Date</th>
           <th>Items</th>
@@ -764,7 +763,6 @@ h3 {
           ?>
           <tr>
             <td><?= htmlspecialchars($t['transaction_id']) ?></td>
-            <td><?= htmlspecialchars($t['user_id']) ?></td>
             <td>₱<?= number_format($t['total_amount'],2) ?></td>
             <td><?= htmlspecialchars($t['transaction_date']) ?></td>
             <td><button class="view-items" data-items='<?= json_encode($items) ?>'>View Items</button></td>
@@ -1034,16 +1032,16 @@ document.addEventListener('DOMContentLoaded', function() {
       pdf.setFontSize(10); pdf.setFont(undefined, 'normal'); const currentDate = new Date().toLocaleDateString(); pdf.text(`Generated on: ${currentDate}`, 105, 28, { align: 'center' });
       pdf.setDrawColor(0); pdf.setLineWidth(0.5); pdf.line(20, 35, 190, 35);
 
-      // Table header
+      // Table header (omit User column for onsite transactions)
       let y = 45; pdf.setFontSize(9); pdf.setFont(undefined,'bold');
-      const headers = ['Transaction ID','User','Total','Date','Source']; const colWidths = [30,30,30,60,30];
+      const headers = ['Transaction ID','Total','Date','Source']; const colWidths = [40,40,60,30];
       let x = 20; pdf.setFillColor(240,240,240); pdf.rect(20, y-5, 170, 7, 'F'); pdf.setTextColor(0);
       headers.forEach((h, idx) => { pdf.text(h, x+2, y); x += colWidths[idx]; }); y += 8; pdf.setFont(undefined,'normal');
 
       const rows = <?= json_encode($all_transactions) ?>;
       rows.forEach(r => {
         if (y > 270) { pdf.addPage(); y = 20; }
-        x = 20; const cells = [r.transaction_id, r.user_id, '₱' + parseFloat(r.total_amount).toFixed(2), r.transaction_date, r.source];
+        x = 20; const cells = [r.transaction_id, '₱' + parseFloat(r.total_amount).toFixed(2), r.transaction_date, r.source];
         cells.forEach((c, idx) => { pdf.text(String(c), x+2, y); x += colWidths[idx]; }); y += 7;
       });
 

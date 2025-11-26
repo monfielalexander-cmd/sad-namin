@@ -631,13 +631,15 @@ function closeAddProductModal() {
 
       <!-- Single product fields -->
       <div id="singleProductFields" style="display:none;">
-        <div class="form-group">
-          <label for="single-price">Price</label>
-          <input type="number" step="0.01" id="single-price" name="price" placeholder="Price" style="width:200px;" />
-        </div>
-        <div class="form-group">
-          <label for="single-stock">Stock</label>
-          <input type="number" id="single-stock" name="stock" placeholder="Stock" min="0" style="width:200px;" />
+        <div class="form-group" style="display:flex; gap:12px; align-items:flex-start; flex-wrap:wrap;">
+          <div style="flex:1; min-width:180px;">
+            <label for="single-price">Price</label>
+            <input type="number" step="0.01" id="single-price" name="price" placeholder="Price" style="width:100%;" />
+          </div>
+          <div style="flex:1; min-width:140px;">
+            <label for="single-stock">Stock</label>
+            <input type="number" id="single-stock" name="stock" placeholder="Stock" min="0" style="width:100%;" />
+          </div>
         </div>
       </div>
 

@@ -134,7 +134,7 @@ body {
 .orders-table th {
   background: linear-gradient(135deg, var(--primary-blue) 0%, #0056b3 100%);
   color: white;
-  padding: 10px 6px;
+  padding: 12px 10px;
   font-weight: 600;
   font-size: 0.90rem;
   text-transform: uppercase;
@@ -154,12 +154,34 @@ body {
   border-right: none;
 }
 
+/* Stronger visible vertical separators: full-height thin lines between columns */
+.orders-table th,
+.orders-table td { position: relative; }
+.orders-table th:not(:last-child)::after,
+.orders-table td:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  top: 10px;
+  bottom: 10px;
+  right: 0;
+  width: 1px;
+  background: linear-gradient(180deg, rgba(0,64,128,0.08), rgba(0,64,128,0.06));
+  pointer-events: none;
+}
+
+@media (max-width: 480px) {
+  /* hide the tall separators on very narrow screens to avoid visual clutter */
+  .orders-table th:not(:last-child)::after,
+  .orders-table td:not(:last-child)::after { display: none; }
+}
+
 .orders-table td {
   border: none;
   border-bottom: 1px solid rgba(0, 64, 128, 0.1);
-  padding: 12px 8px;
+  padding: 12px 10px;
   font-size: var(--font-size-sm);
   transition: var(--transition);
+  text-align: left; /* make text align left for better readability */
 }
 
 .orders-table tbody tr {

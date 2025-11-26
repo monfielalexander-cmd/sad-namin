@@ -21,14 +21,16 @@ if (isset($_POST['ajax_update'])) {
     $new_status = $conn->real_escape_string($_POST['status']);
     $conn->query("UPDATE transactions SET status='$new_status' WHERE transaction_id=$transaction_id");
 
-    // If status became Success, notify the customer by email
+        // If status became Success, notify the customer by email
     if (strtolower($new_status) === 'success') {
-        // fetch the transaction's user_id and transaction_date
-        $txn_res = $conn->query("SELECT user_id, transaction_date FROM transactions WHERE transaction_id=$transaction_id LIMIT 1");
+        // fetch the transaction's user_id, transaction_date and order_type
+        $txn_res = $conn->query("SELECT user_id, transaction_date, order_type, delivery_address FROM transactions WHERE transaction_id=$transaction_id LIMIT 1");
         if ($txn_res && $txn_res->num_rows > 0) {
             $txn = $txn_res->fetch_assoc();
             $user_id = intval($txn['user_id']);
             $transaction_date = $txn['transaction_date'];
+            $order_type = strtolower(trim($txn['order_type'] ?? ''));
+            $delivery_address = $txn['delivery_address'] ?? '';
 
             // fetch user email and name
             $user_res = $conn->query("SELECT email, fname, lname FROM users WHERE id=$user_id LIMIT 1");
@@ -50,17 +52,28 @@ if (isset($_POST['ajax_update'])) {
                         $mail->setFrom('rogeliomonfielsr@gmail.com', 'Abeth Hardware');
                         $mail->addAddress($user_email, $user_name);
                         $mail->isHTML(true);
-                        $mail->Subject = "Your order #$transaction_id is complete";
 
                         $readable_date = date('M d, Y g:i A', strtotime($transaction_date));
-                        $mail_body = "<p>Hello " . htmlspecialchars($user_name) . ",</p>" .
-                                     "<p>Your order <strong>#" . $transaction_id . "</strong> placed on " . $readable_date . " has been marked as <strong>Delivered / Completed</strong>. Thank you for shopping with Abeth Hardware.</p>" .
-                                     "<p>If you have questions about your order, reply to this email or contact us at 📞 +63 966-866-9728.</p>";
 
-                        $mail->Body = $mail_body;
+                        if ($order_type === 'pickup') {
+                            // Send a pickup-ready notification
+                            $mail->Subject = "Your order #$transaction_id is ready for pickup";
+                            $pickup_instructions = "<p>Your order <strong>#" . $transaction_id . "</strong> placed on " . $readable_date . " is now <strong>ready for pickup</strong> at our store.</p>" .
+                                                "<p>Please bring a copy of this email or your Order # when you come to pick up your items.\nPickup Location: <strong>Abeth Hardware, B3/L11 Tiongquaio St. Manuyo Dos, Las Pinas City</strong>.</p>" .
+                                                "<p>Pickup Hours: <strong>Mon–Sat 9:00 AM – 6:00 PM</strong>. For any questions, call 📞 +63 966-866-9728.</p>";
+                            $mail->Body = "<p>Hello " . htmlspecialchars($user_name) . ",</p>" . $pickup_instructions;
+                        } else {
+                            // Default delivered/completed notification for non-pickup orders
+                            $mail->Subject = "Your order #$transaction_id is complete";
+                            $mail_body = "<p>Hello " . htmlspecialchars($user_name) . ",</p>" .
+                                         "<p>Your order <strong>#" . $transaction_id . "</strong> placed on " . $readable_date . " has been marked as <strong>Delivered / Completed</strong>. Thank you for shopping with Abeth Hardware.</p>" .
+                                         "<p>If you have questions about your order, reply to this email or contact us at 📞 +63 966-866-9728.</p>";
+                            $mail->Body = $mail_body;
+                        }
+
                         $mail->send();
                     } catch (Exception $e) {
-                        error_log('Delivery notification mailer error: ' . $mail->ErrorInfo);
+                        error_log('Delivery/pickup notification mailer error: ' . $mail->ErrorInfo);
                     }
                 }
             }
@@ -128,6 +141,7 @@ $transactions = $conn->query($query);
             <th>Payment</th>
             <th>GCash Ref</th>
             <th>Address</th>
+            <th>Contact</th>
             <th>Total</th>
             <th>Date</th>
             <th>Status</th>
@@ -161,6 +175,7 @@ $transactions = $conn->query($query);
                         <?php endif; ?>
                     </td>
                     <td><?= htmlspecialchars($row['delivery_address'] ?? 'N/A') ?></td>
+                    <td><?= htmlspecialchars($row['contact_number'] ?? 'N/A') ?></td>
                     <td>₱<?= number_format($row['total_amount'], 2) ?></td>
                     <td><?= htmlspecialchars($row['transaction_date']) ?></td>
                     <td>
@@ -179,7 +194,7 @@ $transactions = $conn->query($query);
                 </tr>
             <?php endwhile; ?>
         <?php else: ?>
-            <tr><td colspan="10">No transactions found.</td></tr>
+            <tr><td colspan="11">No transactions found.</td></tr>
         <?php endif; ?>
     </table>
 

@@ -150,17 +150,55 @@ if (isset($_POST['confirm_payment'])) {
         // Use the exact transaction datetime
         $order_datetime = date('M d, Y g:i A', strtotime($current_datetime));
         
-        // Calculate estimated delivery time based on current time + travel duration
+        // Calculate estimated delivery time based on customer's delivery address location
         $estimated_delivery = '';
         if ($order_type === 'delivery') {
-            // Estimate delivery time: 30-45 minutes from now for local delivery
-            $delivery_start = date('g:i A', strtotime($current_datetime . ' +30 minutes'));
-            $delivery_end = date('g:i A', strtotime($current_datetime . ' +45 minutes'));
-            $estimated_delivery = "30-45 minutes • $delivery_start - $delivery_end";
+          // Helper: return an estimated minutes range [min, max] based on address keywords
+          if (!function_exists('estimate_minutes_range_from_address')) {
+            function estimate_minutes_range_from_address($address) {
+              $address = strtolower(trim((string)$address));
+              if ($address === '') {
+                return [30, 60];
+              }
+
+              // Keyword -> [minMinutes, maxMinutes]
+              $mapping = [
+                'las pinas' => [25, 40],
+                'las piñas' => [25, 40],
+                'paranaque' => [35, 55],
+                'parañaque' => [35, 55],
+                'muntinlupa' => [30, 50],
+                'makati' => [35, 60],
+                'taguig' => [35, 60],
+                'alabang' => [30, 50],
+                'manila' => [45, 90],
+                'cavite' => [60, 120],
+                'bulacan' => [80, 140],
+              ];
+
+              foreach ($mapping as $k => $v) {
+                if (strpos($address, $k) !== false) {
+                  return $v;
+                }
+              }
+
+              // Fallback default if no keyword matched
+              return [30, 60];
+            }
+          }
+
+          list($minMinutes, $maxMinutes) = estimate_minutes_range_from_address($delivery_address);
+          // Ensure minutes are integers and reasonable
+          $minMinutes = max(1, intval($minMinutes));
+          $maxMinutes = max($minMinutes, intval($maxMinutes));
+
+          $delivery_start = date('g:i A', strtotime($current_datetime . " +{$minMinutes} minutes"));
+          $delivery_end = date('g:i A', strtotime($current_datetime . " +{$maxMinutes} minutes"));
+          $estimated_delivery = "{$minMinutes}-{$maxMinutes} minutes • $delivery_start - $delivery_end";
         } else {
-            // Pickup ready in 15-20 minutes
-            $pickup_time = date('g:i A', strtotime($current_datetime . ' +15 minutes'));
-            $estimated_delivery = "Ready in 15-20 minutes • by $pickup_time";
+          // Pickup ready in 15-20 minutes
+          $pickup_time = date('g:i A', strtotime($current_datetime . ' +15 minutes'));
+          $estimated_delivery = "Ready in 15-20 minutes • by $pickup_time";
         }
 
         // Build items list first
