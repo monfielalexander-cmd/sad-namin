@@ -104,11 +104,12 @@ while ($row = mysqli_fetch_assoc($monthly_sales_result)) {
 // --- Additional KPIs and data for charts ---
 // Most purchased product (online source)
 $most_product = ['product_name' => '—', 'total_qty' => 0];
-$mp_q = "SELECT ti.product_name, SUM(ti.quantity) AS total_qty
+$mp_q = "SELECT COALESCE(ti.product_name, p.name) AS product_name, SUM(ti.quantity) AS total_qty
           FROM transaction_items ti
           JOIN transactions t ON ti.transaction_id = t.transaction_id
+          LEFT JOIN products_ko p ON ti.product_id = p.id
           " . $where . "
-          GROUP BY ti.product_id, ti.product_name
+          GROUP BY ti.product_id, product_name
           ORDER BY total_qty DESC LIMIT 1";
 $mp_res = mysqli_query($conn, $mp_q);
 if ($mp_res && mysqli_num_rows($mp_res) > 0) {
@@ -117,11 +118,12 @@ if ($mp_res && mysqli_num_rows($mp_res) > 0) {
 
 // Aggregated purchased products for modal (uses same filter $where)
 $purchased_products = [];
-$pp_q = "SELECT ti.product_name, SUM(ti.quantity) AS total_qty
+$pp_q = "SELECT COALESCE(ti.product_name, p.name) AS product_name, SUM(ti.quantity) AS total_qty
           FROM transaction_items ti
           JOIN transactions t ON ti.transaction_id = t.transaction_id
+          LEFT JOIN products_ko p ON ti.product_id = p.id
           " . $where . "
-          GROUP BY ti.product_id, ti.product_name
+          GROUP BY ti.product_id, product_name
           ORDER BY total_qty DESC";
 $pp_res = mysqli_query($conn, $pp_q);
 if ($pp_res) {
@@ -142,23 +144,44 @@ $sales_month = (float) mysqli_fetch_assoc(mysqli_query($conn, $sales_month_q))['
 $sales_year_q = "SELECT COALESCE(SUM(total_amount),0) AS total FROM transactions WHERE source='online' AND YEAR(transaction_date)=YEAR(CURDATE())";
 $sales_year = (float) mysqli_fetch_assoc(mysqli_query($conn, $sales_year_q))['total'];
 
-// Daily sales data (last 30 days by default). If a filter is applied, adjust granularity:
+// --- Daily sales data for chart (last 30 days or filtered period) ---
 $daily_labels = [];
 $daily_values = [];
-if ($period === 'month' && $filter_month) {
-  // show daily totals for the selected month
-  $parts = explode('-', $filter_month);
-  $y = intval($parts[0]);
-  $m = intval($parts[1]);
-  $daily_q = "SELECT DATE(transaction_date) AS day, COALESCE(SUM(total_amount),0) AS total FROM transactions WHERE source='online' AND YEAR(transaction_date)=$y AND MONTH(transaction_date)=$m GROUP BY day ORDER BY day ASC";
-  $daily_res = mysqli_query($conn, $daily_q);
+// If a specific day is selected, show the 30-day window ending on that date
+if ($period === 'day' && $filter_date) {
+  $end_ts = strtotime($filter_date);
+  $date_list = [];
+  for ($i = 29; $i >= 0; $i--) {
+    $d = date('Y-m-d', strtotime("-{$i} days", $end_ts));
+    $date_list[] = $d;
+  }
+
+  // query totals for the whole 30-day range (use a fresh WHERE that only limits to online source)
+  $start_date = $date_list[0];
+  $end_date = $date_list[count($date_list)-1];
+  $range_where = "WHERE source='online'";
+  $range_q = "SELECT DATE(transaction_date) AS day, COALESCE(SUM(total_amount),0) AS total FROM transactions " . $range_where . " AND DATE(transaction_date) >= '" . $start_date . "' AND DATE(transaction_date) <= '" . $end_date . "' GROUP BY day ORDER BY day ASC";
+  $range_res = mysqli_query($conn, $range_q);
   $daily_map = [];
-  if ($daily_res) {
-    while ($r = mysqli_fetch_assoc($daily_res)) {
+  if ($range_res) {
+    while ($r = mysqli_fetch_assoc($range_res)) {
       $daily_map[$r['day']] = (float)$r['total'];
     }
   }
-  // build days of that month
+
+  foreach ($date_list as $d) {
+    $daily_labels[] = date('M j', strtotime($d));
+    $daily_values[] = isset($daily_map[$d]) ? $daily_map[$d] : 0;
+  }
+
+} elseif ($period === 'month' && $filter_month) {
+  $parts = explode('-', $filter_month);
+  $y = intval($parts[0]);
+  $m = intval($parts[1]);
+  $daily_q = "SELECT DATE(transaction_date) AS day, COALESCE(SUM(total_amount),0) AS total FROM transactions " . $where . " AND YEAR(transaction_date)=$y AND MONTH(transaction_date)=$m GROUP BY day ORDER BY day ASC";
+  $daily_res = mysqli_query($conn, $daily_q);
+  $daily_map = [];
+  if ($daily_res) while ($r = mysqli_fetch_assoc($daily_res)) $daily_map[$r['day']] = (float)$r['total'];
   $days_in_month = cal_days_in_month(CAL_GREGORIAN, $m, $y);
   for ($d = 1; $d <= $days_in_month; $d++) {
     $date_str = sprintf('%04d-%02d-%02d', $y, $m, $d);
@@ -166,16 +189,11 @@ if ($period === 'month' && $filter_month) {
     $daily_values[] = isset($daily_map[$date_str]) ? $daily_map[$date_str] : 0;
   }
 } elseif ($period === 'year' && $filter_year) {
-  // show monthly totals for the selected year
   $y = intval($filter_year);
-  $daily_q = "SELECT DATE_FORMAT(transaction_date, '%Y-%m') AS day, COALESCE(SUM(total_amount),0) AS total FROM transactions WHERE source='online' AND YEAR(transaction_date)=$y GROUP BY day ORDER BY day ASC";
+  $daily_q = "SELECT DATE_FORMAT(transaction_date, '%Y-%m') AS day, COALESCE(SUM(total_amount),0) AS total FROM transactions " . $where . " AND YEAR(transaction_date)=$y GROUP BY day ORDER BY day ASC";
   $daily_res = mysqli_query($conn, $daily_q);
   $daily_map = [];
-  if ($daily_res) {
-    while ($r = mysqli_fetch_assoc($daily_res)) {
-      $daily_map[$r['day']] = (float)$r['total'];
-    }
-  }
+  if ($daily_res) while ($r = mysqli_fetch_assoc($daily_res)) $daily_map[$r['day']] = (float)$r['total'];
   for ($m = 1; $m <= 12; $m++) {
     $label = date('M', strtotime(sprintf('%04d-%02d-01', $y, $m)));
     $key = sprintf('%04d-%02d', $y, $m);
@@ -183,19 +201,16 @@ if ($period === 'month' && $filter_month) {
     $daily_values[] = isset($daily_map[$key]) ? $daily_map[$key] : 0;
   }
 } else {
-  // default: last 30 days
-  $daily_q = "SELECT DATE(transaction_date) AS day, COALESCE(SUM(total_amount),0) AS total FROM transactions WHERE source='online' AND transaction_date >= DATE_SUB(CURDATE(), INTERVAL 29 DAY) GROUP BY day ORDER BY day ASC";
+  $daily_q = "SELECT DATE(transaction_date) AS day, COALESCE(SUM(total_amount),0) AS total FROM transactions " . $where . " AND transaction_date >= DATE_SUB(CURDATE(), INTERVAL 29 DAY) GROUP BY day ORDER BY day ASC";
   $daily_res = mysqli_query($conn, $daily_q);
-  // build an array indexed by day to fill missing days
   $daily_map = [];
-  if ($daily_res) {
-    while ($r = mysqli_fetch_assoc($daily_res)) {
-      $daily_map[$r['day']] = (float)$r['total'];
-    }
-  }
-  // populate last 30 days labels and values
+  if ($daily_res) while ($r = mysqli_fetch_assoc($daily_res)) $daily_map[$r['day']] = (float)$r['total'];
+  // Use the database's CURDATE() to avoid PHP timezone drift so labels align with DB results
+  $db_today_res = mysqli_query($conn, "SELECT CURDATE() AS today");
+  $db_today_row = $db_today_res ? mysqli_fetch_assoc($db_today_res) : null;
+  $db_today = $db_today_row && isset($db_today_row['today']) ? $db_today_row['today'] : date('Y-m-d');
   for ($i = 29; $i >= 0; $i--) {
-    $d = date('Y-m-d', strtotime("-{$i} days"));
+    $d = date('Y-m-d', strtotime("-{$i} days", strtotime($db_today)));
     $daily_labels[] = date('M j', strtotime($d));
     $daily_values[] = isset($daily_map[$d]) ? $daily_map[$d] : 0;
   }
@@ -820,7 +835,7 @@ if ($period === 'month' && $filter_month) {
 
       <!-- DAILY SALES CHART -->
       <div class="daily-chart">
-        <h2>Last 30 Days — Daily Sales</h2>
+        <h2><?php if ($period === 'day' && $filter_date) { echo htmlspecialchars(date('M j, Y', strtotime($filter_date))) . ' — Daily Sales'; } else { echo 'Last 30 Days — Daily Sales'; } ?></h2>
         <canvas id="dailySalesChart"></canvas>
       </div>
       <table>
@@ -1273,10 +1288,8 @@ if ($period === 'month' && $filter_month) {
       }
 
       if (dailyEl) {
-        // create a distinct color for each bar (repeats if more bars than palette)
         const barColors = labels.map((_, i) => `hsl(${(i * 30) % 360} 72% 55%)`);
         const borderColors = labels.map((_, i) => `hsl(${(i * 30) % 360} 70% 40%)`);
-
         new Chart(dailyEl.getContext('2d'), {
           type: 'bar',
           data: {

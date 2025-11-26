@@ -214,7 +214,33 @@ while ($row = $monthly_sales_result->fetch_assoc()) {
 // --- Daily sales data for chart (last 30 days or filtered period) ---
 $daily_labels = [];
 $daily_values = [];
-if ($period === 'month' && $filter_month) {
+// Anchor labels to DB CURDATE() to match SQL date range
+$db_today_res = $conn->query("SELECT CURDATE() AS today");
+$db_today = ($db_today_res && ($tmp = $db_today_res->fetch_assoc())) ? $tmp['today'] : date('Y-m-d');
+// If a specific day is selected, show the 30-day window ending on that date
+if ($period === 'day' && $filter_date) {
+  $end_ts = strtotime($filter_date);
+  $date_list = [];
+  for ($i = 29; $i >= 0; $i--) {
+    $d = date('Y-m-d', strtotime("-{$i} days", $end_ts));
+    $date_list[] = $d;
+  }
+
+  // query totals for the whole 30-day range (limit to pos source)
+  $start_date = $date_list[0];
+  $end_date = $date_list[count($date_list)-1];
+  $range_where = "WHERE source='pos'";
+  $range_q = "SELECT DATE(transaction_date) AS day, COALESCE(SUM(total_amount),0) AS total FROM transactions " . $range_where . " AND DATE(transaction_date) >= '" . $start_date . "' AND DATE(transaction_date) <= '" . $end_date . "' GROUP BY day ORDER BY day ASC";
+  $range_res = $conn->query($range_q);
+  $daily_map = [];
+  if ($range_res) while ($r = $range_res->fetch_assoc()) $daily_map[$r['day']] = (float)$r['total'];
+
+  foreach ($date_list as $d) {
+    $daily_labels[] = date('M j', strtotime($d));
+    $daily_values[] = isset($daily_map[$d]) ? $daily_map[$d] : 0;
+  }
+
+} elseif ($period === 'month' && $filter_month) {
   $parts = explode('-', $filter_month);
   $y = intval($parts[0]);
   $m = intval($parts[1]);
@@ -246,7 +272,7 @@ if ($period === 'month' && $filter_month) {
   $daily_map = [];
   if ($daily_res) while ($r = $daily_res->fetch_assoc()) $daily_map[$r['day']] = (float)$r['total'];
   for ($i = 29; $i >= 0; $i--) {
-    $d = date('Y-m-d', strtotime("-{$i} days"));
+    $d = date('Y-m-d', strtotime("-{$i} days", strtotime($db_today)));
     $daily_labels[] = date('M j', strtotime($d));
     $daily_values[] = isset($daily_map[$d]) ? $daily_map[$d] : 0;
   }
