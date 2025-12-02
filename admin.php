@@ -87,6 +87,14 @@ if (isset($_POST['add_product'])) {
     $price = floatval($_POST['price']);
     $stock = intval($_POST['stock']);
 
+    // Check if product name already exists
+    $check_name = $conn->query("SELECT id FROM products_ko WHERE name = '$name' AND archive = 0");
+    if ($check_name && $check_name->num_rows > 0) {
+        $_SESSION['error_message'] = "Product name already exists. Please use a different name.";
+        header("Location: admin.php");
+        exit();
+    }
+
     $image = "";
     if (isset($_FILES['image']) && $_FILES['image']['error'] == 0) {
         $img_name = basename($_FILES['image']['name']);
@@ -120,8 +128,21 @@ if (isset($_POST['add_product'])) {
                 // Calculate price modifier as difference from base price
                 $price_modifier = $final_price - $price;
 
-                $conn->query("INSERT INTO product_variants (product_id, size, stock, price_modifier)
-                              VALUES ($product_id, '$size', $size_stock, $price_modifier)");
+                // Handle variant image upload
+                $variant_image = "";
+                if (isset($_FILES['size_images']) && isset($_FILES['size_images']['name'][$i]) && $_FILES['size_images']['error'][$i] == 0) {
+                    $img_name = basename($_FILES['size_images']['name'][$i]);
+                    $target_dir = "uploads/";
+                    if (!is_dir($target_dir)) mkdir($target_dir);
+                    $target_file = $target_dir . time() . "_" . $i . "_" . $img_name;
+                    
+                    if (move_uploaded_file($_FILES['size_images']['tmp_name'][$i], $target_file)) {
+                        $variant_image = $target_file;
+                    }
+                }
+
+                $conn->query("INSERT INTO product_variants (product_id, size, stock, price_modifier, image)
+                              VALUES ($product_id, '$size', $size_stock, $price_modifier, '$variant_image')");
             }
         }
     }
@@ -152,6 +173,14 @@ if (isset($_POST['edit_product'])) {
     $name = $conn->real_escape_string($_POST['edit_name']);
     $category = $conn->real_escape_string($_POST['edit_category']);
     $price = floatval($_POST['edit_price']);
+
+    // Check if product name already exists (excluding current product)
+    $check_name = $conn->query("SELECT id FROM products_ko WHERE name = '$name' AND archive = 0 AND id != $pid");
+    if ($check_name && $check_name->num_rows > 0) {
+        $_SESSION['error_message'] = "Product name already exists. Please use a different name.";
+        header("Location: admin.php");
+        exit();
+    }
 
     // Handle image update
     $image_update = "";
@@ -191,7 +220,21 @@ if (isset($_POST['edit_product'])) {
             $final_price = floatval($variant_prices[$i]);
             $price_modifier = $final_price - $price;
 
-            $conn->query("UPDATE product_variants SET size = '$size', price_modifier = $price_modifier WHERE id = $vid");
+            // Handle variant image update
+            $image_update = "";
+            $file_key = "edit_variant_images_" . $vid;
+            if (isset($_FILES[$file_key]) && $_FILES[$file_key]['error'] == 0) {
+                $img_name = basename($_FILES[$file_key]['name']);
+                $target_dir = "uploads/";
+                if (!is_dir($target_dir)) mkdir($target_dir);
+                $target_file = $target_dir . time() . "_variant_" . $vid . "_" . $img_name;
+                
+                if (move_uploaded_file($_FILES[$file_key]['tmp_name'], $target_file)) {
+                    $image_update = ", image = '" . $conn->real_escape_string($target_file) . "'";
+                }
+            }
+
+            $conn->query("UPDATE product_variants SET size = '$size', price_modifier = $price_modifier $image_update WHERE id = $vid");
         }
     }
 
@@ -208,7 +251,20 @@ if (isset($_POST['edit_product'])) {
                 $final_price = floatval($new_prices[$i]);
                 $price_modifier = $final_price - $price;
 
-                $conn->query("INSERT INTO product_variants (product_id, size, stock, price_modifier) VALUES ($pid, '$size', $stock, $price_modifier)");
+                // Handle new variant image upload
+                $variant_image = "";
+                if (isset($_FILES['new_variant_images']) && isset($_FILES['new_variant_images']['name'][$i]) && $_FILES['new_variant_images']['error'][$i] == 0) {
+                    $img_name = basename($_FILES['new_variant_images']['name'][$i]);
+                    $target_dir = "uploads/";
+                    if (!is_dir($target_dir)) mkdir($target_dir);
+                    $target_file = $target_dir . time() . "_" . $i . "_" . $img_name;
+                    
+                    if (move_uploaded_file($_FILES['new_variant_images']['tmp_name'][$i], $target_file)) {
+                        $variant_image = $target_file;
+                    }
+                }
+
+                $conn->query("INSERT INTO product_variants (product_id, size, stock, price_modifier, image) VALUES ($pid, '$size', $stock, $price_modifier, '$variant_image')");
             }
         }
     }
@@ -253,6 +309,116 @@ if (isset($_POST['update_variant_stock'])) {
     $stmt->execute();
     $stmt->close();
   }
+    
+    header("Location: admin.php");
+    exit();
+}
+
+/* ---------------- EXPORT STOCK TO CSV ---------------- */
+if (isset($_GET['export_stock_csv'])) {
+    header('Content-Type: text/csv');
+    header('Content-Disposition: attachment; filename="stock_export_' . date('Y-m-d_His') . '.csv"');
+    
+    $output = fopen('php://output', 'w');
+    fputcsv($output, ['Type', 'Product ID', 'Variant ID', 'Product Name', 'Size', 'Current Stock', 'Add Stock']);
+    
+    // Export multi-size products with variants
+    $multi = $conn->query("SELECT p.id as product_id, p.name, v.id as variant_id, v.size, v.stock 
+                           FROM products_ko p 
+                           JOIN product_variants v ON p.id = v.product_id 
+                           WHERE p.archive = 0 
+                           ORDER BY p.name, v.size");
+    if ($multi) {
+        while ($row = $multi->fetch_assoc()) {
+            fputcsv($output, [
+                'variant',
+                $row['product_id'],
+                $row['variant_id'],
+                $row['name'],
+                $row['size'],
+                $row['stock'],
+                '' // Empty column for user to fill
+            ]);
+        }
+    }
+    
+    // Export single products
+    $single = $conn->query("SELECT p.id, p.name, p.stock 
+                            FROM products_ko p 
+                            WHERE p.archive = 0 
+                            AND p.id NOT IN (SELECT DISTINCT product_id FROM product_variants) 
+                            ORDER BY p.name");
+    if ($single) {
+        while ($row = $single->fetch_assoc()) {
+            fputcsv($output, [
+                'product',
+                $row['id'],
+                '',
+                $row['name'],
+                '',
+                $row['stock'],
+                '' // Empty column for user to fill
+            ]);
+        }
+    }
+    
+    fclose($output);
+    exit();
+}
+
+/* ---------------- IMPORT STOCK FROM CSV ---------------- */
+if (isset($_POST['import_stock_csv']) && isset($_FILES['stock_csv'])) {
+    $errors = [];
+    $success_count = 0;
+    
+    if ($_FILES['stock_csv']['error'] == 0) {
+        $file = fopen($_FILES['stock_csv']['tmp_name'], 'r');
+        
+        // Skip header row
+        fgetcsv($file);
+        
+        while (($data = fgetcsv($file)) !== FALSE) {
+            if (count($data) < 7) continue;
+            
+            $type = trim($data[0]);
+            $product_id = intval($data[1]);
+            $variant_id = $data[2] ? intval($data[2]) : null;
+            $add_stock = intval($data[6]);
+            
+            if ($add_stock <= 0) continue; // Skip if no stock to add
+            
+            if ($type === 'variant' && $variant_id) {
+                // Update variant stock
+                $conn->query("UPDATE product_variants SET stock = stock + $add_stock WHERE id = $variant_id");
+                
+                // Log the change
+                $stmt = $conn->prepare("INSERT INTO stock_log (product_id, variant_id, change_amount) VALUES (?, ?, ?)");
+                if ($stmt) {
+                    $stmt->bind_param('iii', $product_id, $variant_id, $add_stock);
+                    $stmt->execute();
+                    $stmt->close();
+                }
+                $success_count++;
+            } elseif ($type === 'product' && $product_id) {
+                // Update product stock
+                $conn->query("UPDATE products_ko SET stock = stock + $add_stock WHERE id = $product_id");
+                
+                // Log the change
+                $stmt = $conn->prepare("INSERT INTO stock_log (product_id, variant_id, change_amount) VALUES (?, NULL, ?)");
+                if ($stmt) {
+                    $stmt->bind_param('ii', $product_id, $add_stock);
+                    $stmt->execute();
+                    $stmt->close();
+                }
+                $success_count++;
+            }
+        }
+        
+        fclose($file);
+        $_SESSION['success_message'] = "Successfully updated stock for $success_count items.";
+    } else {
+        $_SESSION['error_message'] = "Error uploading CSV file.";
+    }
     
     header("Location: admin.php");
     exit();
@@ -351,6 +517,22 @@ function closeAddProductModal() {
 <!-- PRODUCT MANAGEMENT -->
 <div class="admin-panel" id="products">
 
+  <?php if (isset($_SESSION['error_message'])): ?>
+    <div style="background:#e74c3c; color:white; padding:12px 20px; border-radius:8px; margin-bottom:16px; display:flex; justify-content:space-between; align-items:center;">
+      <span><?= $_SESSION['error_message'] ?></span>
+      <button onclick="this.parentElement.remove()" style="background:transparent; border:none; color:white; font-size:20px; cursor:pointer; padding:0 8px;">&times;</button>
+    </div>
+    <?php unset($_SESSION['error_message']); ?>
+  <?php endif; ?>
+
+  <?php if (isset($_SESSION['success_message'])): ?>
+    <div style="background:#27ae60; color:white; padding:12px 20px; border-radius:8px; margin-bottom:16px; display:flex; justify-content:space-between; align-items:center;">
+      <span><?= $_SESSION['success_message'] ?></span>
+      <button onclick="this.parentElement.remove()" style="background:transparent; border:none; color:white; font-size:20px; cursor:pointer; padding:0 8px;">&times;</button>
+    </div>
+    <?php unset($_SESSION['success_message']); ?>
+  <?php endif; ?>
+
   <h3 style="margin-top:0; display:flex; align-items:center; gap:8px;">
     Multi-Size Products
     <small style="font-size:0.9rem; color:#666; font-weight:400;">(Roofing, Lumber, etc.)</small>
@@ -392,6 +574,7 @@ function closeAddProductModal() {
     <input type="text" id="searchInput" placeholder="Search by name, category, price..." class="search-bar">
     <div style="display:flex;gap:8px;align-items:center;">
       <button onclick="openAddProductModal()" class="add-product-btn">+ Add Product</button>
+      <button type="button" onclick="openBatchStockModal()" class="add-product-btn">Batch Stock</button>
       <button type="button" onclick="showStockLogs(0,0)" class="add-product-btn">Show Logs</button>
     </div>
   </div>
@@ -401,7 +584,9 @@ function closeAddProductModal() {
       <th>ID</th>
       <th>Name</th>
       <th>Category</th>
-      <th>Sizes / Stock / Price</th>
+      <th>Sizes</th>
+      <th>Stock</th>
+      <th>Price</th>
       <th>Image</th>
       <th>Actions</th>
     </tr>
@@ -417,6 +602,8 @@ function closeAddProductModal() {
           <td data-label="ID"><?= $p['id'] ?></td>
           <td data-label="Name"><?= htmlspecialchars($p['name']) ?></td>
           <td data-label="Category"><?= htmlspecialchars($p['category'] ?? 'N/A') ?></td>
+          
+          <!-- Sizes Column -->
           <td data-label="Sizes">
             <?php if ($has_variants): ?>
               <div style="font-size:0.85rem; color:#555;">
@@ -425,16 +612,32 @@ function closeAddProductModal() {
                 while ($v = $variants_reset->fetch_assoc()): 
                   $final_price = $p['price'] + $v['price_modifier'];
                 ?>
-                  <div style="display:flex; align-items:center; gap:8px; margin:4px 0;">
-                    <strong><?= htmlspecialchars($v['size']) ?>:</strong>
+                  <div style="margin:4px 0;">
+                    <strong><?= htmlspecialchars($v['size']) ?></strong>
+                  </div>
+                <?php endwhile; ?>
+              </div>
+            <?php else: ?>
+              <span style="color:#999; font-style:italic;">—</span>
+            <?php endif; ?>
+          </td>
+          
+          <!-- Stock Column -->
+          <td data-label="Stock">
+            <?php if ($has_variants): ?>
+              <div style="font-size:0.85rem; color:#555;">
+                <?php 
+                $variants_reset2 = $conn->query("SELECT pv.*, (SELECT MAX(created_at) FROM stock_log sl WHERE sl.variant_id = pv.id) AS last_stock_update FROM product_variants pv WHERE product_id = {$p['id']}");
+                while ($v = $variants_reset2->fetch_assoc()): 
+                ?>
+                  <div style="display:flex; align-items:center; gap:4px; margin:4px 0;">
                     <span><?= $v['stock'] ?> pcs</span>
-                    <span style="color:#27ae60; font-weight:600; margin-left:4px;">₱<?= number_format($final_price, 2) ?></span>
-                    <form method="POST" style="display:inline-flex; gap:4px; margin-left:auto;">
+                    <form method="POST" style="display:inline-flex; gap:4px;">
                       <input type="hidden" name="variant_id" value="<?= $v['id'] ?>">
                       <input type="number" name="new_stock" min="1" placeholder="Qty" 
-                             style="width:60px; padding:4px 8px; border:1px solid #ddd; border-radius:6px; font-size:0.85rem;" required>
+                             style="width:50px; padding:4px 6px; border:1px solid #ddd; border-radius:6px; font-size:0.8rem;" required>
                       <button type="submit" name="update_variant_stock" 
-                              style="padding:4px 10px; background:#0066cc; color:white; border:none; border-radius:6px; cursor:pointer; font-size:0.85rem; font-weight:600;">
+                              style="padding:4px 8px; background:#0066cc; color:white; border:none; border-radius:6px; cursor:pointer; font-size:0.8rem; font-weight:600;">
                         +
                       </button>
                     </form>
@@ -442,23 +645,33 @@ function closeAddProductModal() {
                 <?php endwhile; ?>
               </div>
             <?php else: ?>
-              <div style="font-size:0.85rem; color:#555; display:flex; align-items:center; gap:8px; justify-content:center;">
-                <div>
-                  <strong>Stock:</strong> <?= $p['stock'] ?> pcs
-                  <?php if (!empty($p['last_product_stock_update'])): ?>
-                    <small style="color:#999; margin-left:6px; display:block;">(last: <?= htmlspecialchars($p['last_product_stock_update']) ?>)</small>
-                  <?php endif; ?>
-                  <br>
-                  <strong style="color:#27ae60;">Price:</strong> <span style="color:#27ae60; font-weight:600;">₱<?= number_format($p['price'], 2) ?></span>
-                </div>
-
-                <!-- Inline add-stock form placed next to stock -->
-                <form method="POST" style="display:inline-flex; align-items:center; gap:6px;" class="inline-stock-form">
+              <div style="display:flex; align-items:center; gap:6px; justify-content:center;">
+                <span><?= $p['stock'] ?> pcs</span>
+                <form method="POST" style="display:inline-flex; gap:4px;">
                   <input type="hidden" name="product_id" value="<?= $p['id'] ?>">
-                  <input type="number" name="new_stock" min="1" placeholder="Qty" style="width:64px; padding:6px 8px; border:1px solid #ddd; border-radius:8px; font-size:0.85rem;" required>
+                  <input type="number" name="new_stock" min="1" placeholder="Qty" style="width:50px; padding:4px 6px; border:1px solid #ddd; border-radius:6px; font-size:0.8rem;" required>
                   <button type="submit" name="update_stock" class="plus-stock-btn" title="Add stock">+</button>
                 </form>
               </div>
+            <?php endif; ?>
+          </td>
+          
+          <!-- Price Column -->
+          <td data-label="Price">
+            <?php if ($has_variants): ?>
+              <div style="font-size:0.85rem; color:#555;">
+                <?php 
+                $variants_reset3 = $conn->query("SELECT pv.*, (SELECT MAX(created_at) FROM stock_log sl WHERE sl.variant_id = pv.id) AS last_stock_update FROM product_variants pv WHERE product_id = {$p['id']}");
+                while ($v = $variants_reset3->fetch_assoc()): 
+                  $final_price = $p['price'] + $v['price_modifier'];
+                ?>
+                  <div style="margin:4px 0; color:#27ae60; font-weight:600;">
+                    ₱<?= number_format($final_price, 2) ?>
+                  </div>
+                <?php endwhile; ?>
+              </div>
+            <?php else: ?>
+              <span style="color:#27ae60; font-weight:600;">₱<?= number_format($p['price'], 2) ?></span>
             <?php endif; ?>
           </td>
           <td data-label="Image">
@@ -543,6 +756,48 @@ function closeAddProductModal() {
     <?php endif; ?>
   </table>
 </div>
+<!-- Batch Stock Update Modal -->
+<div id="batchStockModal" class="modal" style="display:none;">
+  <div class="modal-content" style="max-width:600px;">
+    <div class="modal-header">
+      <h2>📊 Batch Stock Update</h2>
+      <span class="close-modal" onclick="closeBatchStockModal()">&times;</span>
+    </div>
+    <div style="padding:20px;">
+      <p style="margin-bottom:20px; color:#666;">Update stock for multiple products at once using a CSV file.</p>
+      
+      <div style="background:#f8f9fa; padding:16px; border-radius:8px; margin-bottom:20px;">
+        <h4 style="margin-top:0; color:#004080;">Step 1: Export Current Stock</h4>
+        <p style="font-size:0.9rem; color:#666; margin-bottom:12px;">Download a CSV file with your current product stock levels.</p>
+        <a href="admin.php?export_stock_csv=1" class="add-product-btn" style="display:inline-block; text-decoration:none; background:#004080;">
+          ⬇️ Download Stock CSV
+        </a>
+      </div>
+      
+      <div style="background:#f8f9fa; padding:16px; border-radius:8px;">
+        <h4 style="margin-top:0; color:#27ae60;">Step 2: Update & Import</h4>
+        <p style="font-size:0.9rem; color:#666; margin-bottom:12px;">
+          Fill in the "Add Stock" column with quantities to add, then upload the file.
+        </p>
+        <form method="POST" enctype="multipart/form-data" style="display:flex; flex-direction:column; gap:12px;">
+          <input type="file" name="stock_csv" accept=".csv" required style="padding:10px; border:2px dashed #ddd; border-radius:8px; background:white;">
+          <button type="submit" name="import_stock_csv" class="submit-btn" style="background:linear-gradient(135deg, #16a085 0%, #27ae60 100%);">
+            ⬆️ Upload & Update Stock
+          </button>
+        </form>
+      </div>
+      
+      <div style="margin-top:16px; padding:12px; background:#fff3cd; border-left:4px solid #ffc107; border-radius:4px;">
+        <small style="color:#856404;">
+          <strong>Note:</strong> Only rows with values in the "Add Stock" column will be updated. Stock will be added to current levels.
+        </small>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button type="button" onclick="closeBatchStockModal()" class="cancel-btn">Close</button>
+    </div>
+  </div>
+</div>
 
 <!-- Stock Log Modal -->
 <div id="stockLogModal" class="modal" style="display:none;">
@@ -556,6 +811,7 @@ function closeAddProductModal() {
       <button type="button" onclick="closeStockLogModal()" class="cancellogs-btn">Close</button>
     </div>
   </div>
+</div>v>
 </div>
 
 
@@ -612,10 +868,13 @@ function closeAddProductModal() {
             <div class="form-group">
               <label>Add New Variants</label>
               <div id="newVariantsContainer">
-                <div class="size-variant-row">
-                  <input type="text" name="new_variant_sizes[]" placeholder="Size" style="flex:2;">
-                  <input type="number" name="new_variant_stocks[]" placeholder="Stock" min="0" style="flex:1;">
-                  <input type="number" step="0.01" name="new_variant_prices[]" placeholder="Final Price" style="flex:1;">
+                <div class="size-variant-row" style="display:flex; gap:8px; align-items:center; margin-bottom:10px; padding:10px; border:1px solid #e0e0e0; border-radius:8px;">
+                  <input type="text" name="new_variant_sizes[]" placeholder="Size" style="flex:2; min-width:120px;">
+                  <input type="number" name="new_variant_stocks[]" placeholder="Stock" min="0" style="flex:1; min-width:100px;">
+                  <input type="number" step="0.01" name="new_variant_prices[]" placeholder="Final Price" style="flex:1; min-width:100px;">
+                  <div style="flex:1.5; min-width:140px;">
+                    <input type="file" name="new_variant_images[]" accept="image/*" style="font-size:0.85rem; width:100%; padding:8px;">
+                  </div>
                   <button type="button" onclick="removeNewVariantRow(this)" class="remove-size-btn">×</button>
                 </div>
               </div>
@@ -701,15 +960,18 @@ function closeAddProductModal() {
         <div class="form-group">
           <label>Product Sizes/Variants</label>
           <div id="sizeVariantsContainer">
-            <div class="size-variant-row">
-              <input type="text" name="sizes[]" placeholder="Size (e.g., 8ft, 10ft)" style="flex:2;">
-              <input type="number" name="size_stocks[]" placeholder="Stock" min="0" style="flex:1;">
-              <input type="number" step="0.01" name="size_prices[]" placeholder="Final Price" style="flex:1;">
+            <div class="size-variant-row" style="display:flex; gap:8px; align-items:center; margin-bottom:10px; padding:10px; border:1px solid #e0e0e0; border-radius:8px;">
+              <input type="text" name="sizes[]" placeholder="Size (e.g., 8ft, 10ft)" style="flex:2; min-width:120px;">
+              <input type="number" name="size_stocks[]" placeholder="Stock" min="0" style="flex:1; min-width:100px;">
+              <input type="number" step="0.01" name="size_prices[]" placeholder="Final Price" style="flex:1; min-width:100px;">
+              <div style="flex:1.5; min-width:140px;">
+                <input type="file" name="size_images[]" accept="image/*" style="font-size:0.85rem; width:100%; padding:8px;">
+              </div>
               <button type="button" onclick="removeSizeRow(this)" class="remove-size-btn">×</button>
             </div>
           </div>
           <button type="button" onclick="addSizeRow()" class="add-size-btn">+ Add Size</button>
-          <small style="color:#666;">Enter the complete price for each size (e.g., 900 for 8ft, 1000 for 10ft)</small>
+          <small style="color:#666;">Enter the complete price for each size and optionally upload an image for each variant</small>
         </div>
       </div>
 
@@ -785,10 +1047,14 @@ function addSizeRow() {
   const container = document.getElementById("sizeVariantsContainer");
   const newRow = document.createElement("div");
   newRow.className = "size-variant-row";
+  newRow.style.cssText = "display:flex; gap:8px; align-items:center; margin-bottom:10px; padding:10px; border:1px solid #e0e0e0; border-radius:8px;";
   newRow.innerHTML = `
-    <input type="text" name="sizes[]" placeholder="Size (e.g., 8ft, 10ft)" style="flex:2;">
-    <input type="number" name="size_stocks[]" placeholder="Stock" min="0" style="flex:1;">
-    <input type="number" step="0.01" name="size_prices[]" placeholder="Final Price" style="flex:1;">
+    <input type="text" name="sizes[]" placeholder="Size (e.g., 8ft, 10ft)" style="flex:2; min-width:120px;">
+    <input type="number" name="size_stocks[]" placeholder="Stock" min="0" style="flex:1; min-width:100px;">
+    <input type="number" step="0.01" name="size_prices[]" placeholder="Final Price" style="flex:1; min-width:100px;">
+    <div style="flex:1.5; min-width:140px;">
+      <input type="file" name="size_images[]" accept="image/*" style="font-size:0.85rem; width:100%; padding:8px;">
+    </div>
     <button type="button" onclick="removeSizeRow(this)" class="remove-size-btn">×</button>
   `;
   container.appendChild(newRow);
@@ -827,15 +1093,31 @@ function openEditProductModal(productId) {
       const variantsContainer = document.getElementById('editVariantsContainer');
       variantsContainer.innerHTML = '';
       if (data.variants && data.variants.length > 0) {
-        data.variants.forEach(variant => {
+        data.variants.forEach((variant, index) => {
           const variantRow = document.createElement('div');
           variantRow.className = 'size-variant-row';
+          variantRow.style.cssText = 'display:flex; gap:8px; align-items:center; margin-bottom:10px; padding:10px; border:1px solid #e0e0e0; border-radius:8px; flex-wrap:wrap;';
+          
+          let imagePreview = '';
+          if (variant.image && variant.image.trim() !== '') {
+            imagePreview = `
+              <div style="width:100%; display:flex; align-items:center; gap:10px; margin-top:8px;">
+                <img src="${variant.image}" alt="${variant.size}" style="width:60px; height:60px; object-fit:cover; border-radius:6px; border:2px solid #ddd;">
+                <small style="color:#666;">Current image</small>
+              </div>
+            `;
+          }
+          
           variantRow.innerHTML = `
             <input type="hidden" name="edit_variant_ids[]" value="${variant.id}">
-            <input type="text" name="edit_variant_sizes[]" value="${variant.size}" placeholder="Size" style="flex:2;">
-            <span style="flex:1; padding:8px; color:#666;">Stock: ${variant.stock}</span>
-            <input type="number" step="0.01" name="edit_variant_prices[]" value="${variant.final_price}" placeholder="Final Price" style="flex:1;">
+            <input type="text" name="edit_variant_sizes[]" value="${variant.size}" placeholder="Size" style="flex:2; min-width:120px;">
+            <span style="flex:1; padding:8px; color:#666; min-width:100px;">Stock: ${variant.stock}</span>
+            <input type="number" step="0.01" name="edit_variant_prices[]" value="${variant.final_price}" placeholder="Final Price" style="flex:1; min-width:100px;">
+            <div style="flex:1.5; min-width:140px;">
+              <input type="file" name="edit_variant_images_${variant.id}" accept="image/*" style="font-size:0.85rem; width:100%; padding:8px;" onchange="previewEditVariantImage(this, ${variant.id})">
+            </div>
             <button type="button" class="remove-size-btn" style="margin-left:8px;" onclick="markRemoveExistingVariant(this, ${variant.id})">×</button>
+            ${imagePreview}
           `;
           variantsContainer.appendChild(variantRow);
         });
@@ -882,6 +1164,33 @@ function closeEditProductModal() {
   document.getElementById('editProductModal').style.display = 'none';
 }
 
+// Preview variant image when selected in edit modal
+function previewEditVariantImage(input, variantId) {
+  if (input.files && input.files[0]) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      // Find the variant row and update or add preview
+      const fileInput = input;
+      const row = fileInput.closest('.size-variant-row');
+      let existingPreview = row.querySelector('.variant-image-preview');
+      
+      if (!existingPreview) {
+        const previewDiv = document.createElement('div');
+        previewDiv.className = 'variant-image-preview';
+        previewDiv.style.cssText = 'width:100%; display:flex; align-items:center; gap:10px; margin-top:8px;';
+        row.appendChild(previewDiv);
+        existingPreview = previewDiv;
+      }
+      
+      existingPreview.innerHTML = `
+        <img src="${e.target.result}" alt="Preview" style="width:60px; height:60px; object-fit:cover; border-radius:6px; border:2px solid #27ae60;">
+        <small style="color:#27ae60; font-weight:600;">New image selected</small>
+      `;
+    };
+    reader.readAsDataURL(input.files[0]);
+  }
+}
+
 // Mark an existing variant for removal: add hidden input to the form and remove the row from DOM
 function markRemoveExistingVariant(btn, variantId) {
   if (!confirm('Remove this variant? This will delete it when you save.')) return;
@@ -899,10 +1208,14 @@ function addNewVariantRow() {
   const container = document.getElementById('newVariantsContainer');
   const newRow = document.createElement('div');
   newRow.className = 'size-variant-row';
+  newRow.style.cssText = 'display:flex; gap:8px; align-items:center; margin-bottom:10px; padding:10px; border:1px solid #e0e0e0; border-radius:8px;';
   newRow.innerHTML = `
-    <input type="text" name="new_variant_sizes[]" placeholder="Size" style="flex:2;">
-    <input type="number" name="new_variant_stocks[]" placeholder="Stock" min="0" style="flex:1;">
-    <input type="number" step="0.01" name="new_variant_prices[]" placeholder="Final Price" style="flex:1;">
+    <input type="text" name="new_variant_sizes[]" placeholder="Size" style="flex:2; min-width:120px;">
+    <input type="number" name="new_variant_stocks[]" placeholder="Stock" min="0" style="flex:1; min-width:100px;">
+    <input type="number" step="0.01" name="new_variant_prices[]" placeholder="Final Price" style="flex:1; min-width:100px;">
+    <div style="flex:1.5; min-width:140px;">
+      <input type="file" name="new_variant_images[]" accept="image/*" style="font-size:0.85rem; width:100%; padding:8px;">
+    </div>
     <button type="button" onclick="removeNewVariantRow(this)" class="remove-size-btn">×</button>
   `;
   container.appendChild(newRow);
@@ -910,6 +1223,15 @@ function addNewVariantRow() {
 
 function removeNewVariantRow(btn) {
   btn.parentElement.remove();
+}
+
+// Batch Stock Modal Functions
+function openBatchStockModal() {
+  document.getElementById('batchStockModal').style.display = 'block';
+}
+
+function closeBatchStockModal() {
+  document.getElementById('batchStockModal').style.display = 'none';
 }
 
 // Toggle between single product and multi-size (variants) in Add Product modal

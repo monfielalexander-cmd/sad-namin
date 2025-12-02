@@ -130,7 +130,9 @@
         <span class="close" onclick="closeModal('login-modal')">&times;</span>
         <h2>Sign In</h2>
         <form method="POST" action="login.php">
-          <input type="text" name="username" placeholder="Username or Email" required>
+          <label for="login-username" style="display: block; margin-bottom: 5px; color: var(--primary-blue); font-weight: 600; font-size: 0.9rem; text-align: left;">Username or Email</label>
+          <input id="login-username" type="text" name="username" placeholder="Username or Email" required>
+          <label for="login-password" style="display: block; margin-bottom: 5px; margin-top: 10px; color: var(--primary-blue); font-weight: 600; font-size: 0.9rem; text-align: left;">Password</label>
     <div class="password-field">
             <input id="login-password" type="password" name="password" placeholder="Password" required class="modal-input password-input">
             <button type="button" class="password-toggle" onclick="togglePassword('login-password', this)" aria-pressed="false" aria-label="Show password" title="Show password"> 
@@ -153,11 +155,17 @@
         <span class="close" onclick="closeModal('register-modal')">&times;</span>
         <h2>Create Account</h2>
         <form method="POST" action="register.php" id="register-form" autocomplete="off">
-          <input type="text" name="fname" placeholder="First Name" required>
-          <input type="text" name="lname" placeholder="Last Name" required>
-          <input type="text" name="address" placeholder="Address" required>
-          <input type="email" name="email" placeholder="Email" required>
-          <input type="text" name="username" placeholder="Username" required>
+          <label for="register-fname" style="display: block; margin-bottom: 5px; color: var(--primary-blue); font-weight: 600; font-size: 0.9rem; text-align: left;">First Name</label>
+          <input id="register-fname" type="text" name="fname" placeholder="First Name" required>
+          <label for="register-lname" style="display: block; margin-bottom: 5px; margin-top: 8px; color: var(--primary-blue); font-weight: 600; font-size: 0.9rem; text-align: left;">Last Name</label>
+          <input id="register-lname" type="text" name="lname" placeholder="Last Name" required>
+          <label for="register-address" style="display: block; margin-bottom: 5px; margin-top: 8px; color: var(--primary-blue); font-weight: 600; font-size: 0.9rem; text-align: left;">Address</label>
+          <input id="register-address" type="text" name="address" placeholder="Address" required>
+          <label for="register-email" style="display: block; margin-bottom: 5px; margin-top: 8px; color: var(--primary-blue); font-weight: 600; font-size: 0.9rem; text-align: left;">Email</label>
+          <input id="register-email" type="email" name="email" placeholder="Email" required>
+          <label for="register-username" style="display: block; margin-bottom: 5px; margin-top: 8px; color: var(--primary-blue); font-weight: 600; font-size: 0.9rem; text-align: left;">Username</label>
+          <input id="register-username" type="text" name="username" placeholder="Username" required>
+          <label for="register-password" style="display: block; margin-bottom: 5px; margin-top: 8px; color: var(--primary-blue); font-weight: 600; font-size: 0.9rem; text-align: left;">Password</label>
           <div class="password-field">
             <input id="register-password" type="password" name="password" placeholder="Password" required class="modal-input password-input">
             <button type="button" class="password-toggle" onclick="togglePassword('register-password', this)" aria-pressed="false" aria-label="Show password" title="Show password">
@@ -167,6 +175,7 @@
               </svg>
             </button>
           </div>
+          <label for="register-password-confirm" style="display: block; margin-bottom: 5px; margin-top: 8px; color: var(--primary-blue); font-weight: 600; font-size: 0.9rem; text-align: left;">Confirm Password</label>
           <div class="password-field">
             <input id="register-password-confirm" type="password" name="password_confirm" placeholder="Confirm Password" required class="modal-input password-input">
             <button type="button" class="password-toggle" onclick="togglePassword('register-password-confirm', this)" aria-pressed="false" aria-label="Show password" title="Show password">

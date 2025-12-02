@@ -20,11 +20,15 @@ if ($conn->connect_error) {
 
 /* ---------------- FETCH USER EMAIL ---------------- */
 $user_email = "";
-$user_query = $conn->query("SELECT email, fname, lname FROM users WHERE id='$customer_id'");
+$user_address = "";
+$user_contact = "";
+$user_query = $conn->query("SELECT email, fname, lname, address FROM users WHERE id='$customer_id'");
 if ($user_query && $user_query->num_rows > 0) {
     $user = $user_query->fetch_assoc();
     $user_email = $user['email'];
     $user_name = $user['fname'] . ' ' . $user['lname'];
+    $user_address = $user['address'] ?? '';
+    $user_contact = ''; // No contact number in signup
 }
 
 /* ---------------- ADD TO CART ---------------- */
@@ -33,10 +37,27 @@ if (isset($_POST['add_to_cart'])) {
     $variant_id = isset($_POST['variant_id']) ? intval($_POST['variant_id']) : null;
     $size = isset($_POST['size']) ? $conn->real_escape_string($_POST['size']) : null;
     
-    $check = $conn->query("SELECT * FROM cart WHERE customer_id='$customer_id' AND product_id='$product_id' AND variant_id " . ($variant_id ? "= $variant_id" : "IS NULL"));
-    if ($check->num_rows > 0) {
-        $conn->query("UPDATE cart SET quantity = quantity + 1 WHERE customer_id='$customer_id' AND product_id='$product_id' AND variant_id " . ($variant_id ? "= $variant_id" : "IS NULL"));
+    // Check current cart quantity and available stock
+    $stock_check = $conn->query("
+        SELECT c.quantity, COALESCE(v.stock, p.stock) as available_stock
+        FROM cart c 
+        JOIN products_ko p ON c.product_id = '$product_id'
+        LEFT JOIN product_variants v ON c.variant_id = v.id
+        WHERE c.customer_id='$customer_id' AND c.product_id='$product_id' AND c.variant_id " . ($variant_id ? "= $variant_id" : "IS NULL")
+    );
+    
+    if ($stock_check && $stock_check->num_rows > 0) {
+        $stock_row = $stock_check->fetch_assoc();
+        $current_qty = $stock_row['quantity'];
+        $available_stock = $stock_row['available_stock'];
+        
+        // Only update if quantity is less than available stock
+        if ($current_qty < $available_stock) {
+            $conn->query("UPDATE cart SET quantity = quantity + 1 WHERE customer_id='$customer_id' AND product_id='$product_id' AND variant_id " . ($variant_id ? "= $variant_id" : "IS NULL"));
+        }
+        // If already at max stock, do nothing (silently ignore the request)
     } else {
+        // Item not in cart yet, add it
         $variant_id_value = $variant_id ? $variant_id : 'NULL';
         $size_value = $size ? "'$size'" : 'NULL';
         $conn->query("INSERT INTO cart (customer_id, product_id, variant_id, size, quantity) VALUES ('$customer_id','$product_id',$variant_id_value,$size_value,'1')");
@@ -465,10 +486,12 @@ if ($transactions_result) {
 <div class="layout">
   <div class="left-panel">
     
+    <h2>Our Products</h2>
+    
     <div class="filter-section">
       <form method="GET" onsubmit="return false;">
-        <label for="productSearch" class="search-label">Search products:</label>
-        <input type="search" id="productSearch" name="search" class="search-input" placeholder="Search by name, description or category">
+        <label for="productSearch" class="search-label">🔍</label>
+        <input type="search" id="productSearch" name="search" class="search-input" placeholder="Search by name, description or category...">
       </form>
     </div>
 
@@ -488,7 +511,7 @@ if ($transactions_result) {
             <?php endif; ?>
             <div class="product-footer">
               <h4><?= htmlspecialchars($p['name']) ?></h4>
-              <p class="stock-info"><?= $available_stock ?> available</p>
+              <p class="stock-info" <?php if ($available_stock <= 0) echo 'style="color: var(--danger-red); font-weight: 700;"'; ?>><?= $available_stock > 0 ? $available_stock . ' available' : 'Out of Stock' ?></p>
               
               <?php if ($available_stock > 0): ?>
                 <?php if ($has_variants): ?>
@@ -561,8 +584,8 @@ if ($transactions_result) {
                 <option value="delivery">🚚 Delivery</option>
               </select>
               <div id="deliveryFields" class="delivery-fields">
-                <input type="text" name="delivery_address" placeholder="📍 Enter Delivery Address" required>
-                <input type="text" name="contact_number" placeholder="📞 Enter Contact Number" required>
+                <input type="text" name="delivery_address" id="deliveryAddress" placeholder="📍 Enter Delivery Address" value="<?= htmlspecialchars($user_address) ?>" pattern=".*Las Piñas.*|.*Las Pinas.*|.*Laspinas.*" title="Only Las Piñas, Philippines addresses are accepted" required>
+                <input type="tel" name="contact_number" id="contactNumber" placeholder="📞 Enter Contact Number (09xxxxxxxxx)" value="<?= htmlspecialchars($user_contact) ?>" pattern="^(09|\+639)[0-9]{9}$" title="Philippine mobile number format: 09xxxxxxxxx or +639xxxxxxxxx" maxlength="13" required>
               </div>
             </div>
             <button type="button" class="checkout-btn" onclick="openPaymentModal()">🛒 Checkout Now</button>
@@ -656,6 +679,17 @@ if ($transactions_result) {
       <div id="sizeOptions" style="display: flex; flex-direction: column; gap: 12px;">
         <!-- Size options will be loaded here via JavaScript -->
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- Variant Image Viewer Modal -->
+<div id="imageViewerModal" class="payment-modal" style="display: none; background: transparent; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); overflow: hidden;">
+  <div class="payment-modal-content" style="max-width: 90%; max-height: 90vh; background: transparent; box-shadow: none; padding: 20px; overflow: hidden;">
+    <button class="payment-close-btn" onclick="closeImageViewer()" style="background: white; color: #004080; font-size: 28px; width: 45px; height: 45px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">×</button>
+    <div style="text-align: center;">
+      <img id="viewerImage" src="" alt="" style="max-width: 100%; max-height: 80vh; object-fit: contain; border-radius: 8px; box-shadow: 0 8px 32px rgba(0,0,0,0.3);">
+      <p id="viewerCaption" style="color: #004080; font-size: 18px; margin-top: 20px; font-weight: 600; text-shadow: 0 0 10px rgba(255,255,255,0.8);"></p>
     </div>
   </div>
 </div>
@@ -802,6 +836,22 @@ function openPaymentModal() {
       alert('Please enter delivery address and contact number');
       return;
     }
+    
+    // Validate Las Piñas address
+    const addressLower = deliveryAddress.value.toLowerCase();
+    if (!addressLower.includes('las piñas') && !addressLower.includes('las pinas') && !addressLower.includes('laspinas')) {
+      alert('Only Las Piñas, Philippines addresses are accepted for delivery.');
+      deliveryAddress.focus();
+      return;
+    }
+    
+    // Validate Philippine phone number
+    const phonePattern = /^(09|\+639)[0-9]{9}$/;
+    if (!phonePattern.test(contactNumber.value)) {
+      alert('Please enter a valid Philippine mobile number (format: 09xxxxxxxxx or +639xxxxxxxxx)');
+      contactNumber.focus();
+      return;
+    }
   }
   
   // Store values in hidden form
@@ -841,8 +891,13 @@ function confirmGcashPayment() {
     return;
   }
   
-  if (referenceNumber.length < 10) {
-    alert('Please enter a valid GCash reference number (at least 10 digits)');
+  if (!/^[0-9]+$/.test(referenceNumber)) {
+    alert('GCash reference number must contain only numbers');
+    return;
+  }
+  
+  if (referenceNumber.length !== 13) {
+    alert('GCash reference number must be exactly 13 digits');
     return;
   }
   
@@ -858,11 +913,42 @@ function backToPaymentOptions() {
   document.getElementById('paymentModal').style.display = 'flex';
 }
 
+// GCash reference number input validation
+document.addEventListener('DOMContentLoaded', function() {
+  const gcashInput = document.getElementById('gcashReference');
+  if (gcashInput) {
+    gcashInput.addEventListener('input', function(e) {
+      // Remove non-numeric characters
+      this.value = this.value.replace(/[^0-9]/g, '');
+      
+      // Limit to 13 digits
+      if (this.value.length > 13) {
+        this.value = this.value.slice(0, 13);
+      }
+      
+      // Visual feedback for valid length
+      if (this.value.length === 13) {
+        this.style.borderColor = '#27ae60';
+      } else {
+        this.style.borderColor = '#ddd';
+      }
+    });
+    
+    gcashInput.addEventListener('paste', function(e) {
+      // Handle paste events
+      setTimeout(() => {
+        this.value = this.value.replace(/[^0-9]/g, '').slice(0, 13);
+      }, 0);
+    });
+  }
+});
+
 // Close modal when clicking outside
 window.onclick = function(event) {
   const paymentModal = document.getElementById('paymentModal');
   const gcashModal = document.getElementById('gcashModal');
   const sizeModal = document.getElementById('sizeModal');
+  const imageViewerModal = document.getElementById('imageViewerModal');
   if (event.target === paymentModal) {
     closePaymentModal();
   }
@@ -871,6 +957,9 @@ window.onclick = function(event) {
   }
   if (event.target === sizeModal) {
     closeSizeModal();
+  }
+  if (event.target === imageViewerModal) {
+    closeImageViewer();
   }
 }
 
@@ -923,8 +1012,23 @@ function openSizeModal(productId, productName, basePrice) {
           };
         }
         
+        // Build variant image HTML if available
+        let variantImageHTML = '';
+        if (variant.image && variant.image.trim() !== '') {
+          variantImageHTML = `
+            <div style="flex-shrink: 0; margin-right: 15px;">
+              <img src="${variant.image}" alt="${variant.size}" 
+                   style="width: 120px; height: 120px; object-fit: cover; border-radius: 12px; border: 3px solid #e0e0e0; cursor: pointer; transition: transform 0.2s ease;"
+                   onclick="event.stopPropagation(); viewVariantImage('${variant.image}', '${variant.size}');"
+                   onmouseover="this.style.transform='scale(1.05)'; this.style.borderColor='#004080';"
+                   onmouseout="this.style.transform='scale(1)'; this.style.borderColor='#e0e0e0';">
+            </div>
+          `;
+        }
+        
         sizeOption.innerHTML = `
-          <div>
+          ${variantImageHTML}
+          <div style="flex: 1;">
             <div style="font-weight: 600; font-size: 16px; color: #004080;">${variant.size}</div>
             <div style="font-size: 12px; color: ${isOutOfStock ? '#999' : '#666'}; margin-top: 4px;">
               ${isOutOfStock ? 'Out of Stock' : `${variant.stock} available`}
@@ -950,6 +1054,20 @@ function openSizeModal(productId, productName, basePrice) {
 
 function closeSizeModal() {
   document.getElementById('sizeModal').style.display = 'none';
+}
+
+function viewVariantImage(imageSrc, variantSize) {
+  const modal = document.getElementById('imageViewerModal');
+  const img = document.getElementById('viewerImage');
+  const caption = document.getElementById('viewerCaption');
+  
+  img.src = imageSrc;
+  caption.textContent = variantSize;
+  modal.style.display = 'flex';
+}
+
+function closeImageViewer() {
+  document.getElementById('imageViewerModal').style.display = 'none';
 }
 
 function selectSize(productId, variantId, size) {

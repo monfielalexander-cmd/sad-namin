@@ -51,6 +51,7 @@ if ($variants_query) {
             'stock' => $variant['stock'],
             'price_modifier' => $variant['price_modifier'],
             'final_price' => $final_price,
+            'image' => $variant['image'] ?? '',
             'last_stock_update' => $variant['last_stock_update'] ?? null,
             'last_change_amount' => isset($variant['last_change_amount']) ? intval($variant['last_change_amount']) : null
         ];

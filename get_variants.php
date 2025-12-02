@@ -13,7 +13,7 @@ if ($product_id <= 0) {
     exit();
 }
 
-$variants = $conn->query("SELECT id, size, stock, price_modifier FROM product_variants WHERE product_id = $product_id ORDER BY size ASC");
+$variants = $conn->query("SELECT id, size, stock, price_modifier, image FROM product_variants WHERE product_id = $product_id ORDER BY size ASC");
 
 $result = [];
 if ($variants && $variants->num_rows > 0) {

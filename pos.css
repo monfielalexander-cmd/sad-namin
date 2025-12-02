@@ -43,36 +43,20 @@ body {
 nav {
   background: linear-gradient(135deg, var(--primary-blue) 0%, #0056b3 100%);
   color: white;
-  padding: 20px 40px;
+  padding: 12px 30px;
   display: flex;
   justify-content: space-between;
   align-items: center;
   position: sticky;
   top: 0;
   z-index: 1000;
-  box-shadow: var(--shadow-medium);
-  backdrop-filter: blur(10px);
-}
-
-nav::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(45deg, transparent 0%, rgba(255, 204, 0, 0.1) 50%, transparent 100%);
-  pointer-events: none;
+  box-shadow: var(--shadow-light);
 }
 
 nav .logo {
-  font-size: 1.6rem;
+  font-size: 1.4rem;
   font-weight: 700;
-  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
-  background: linear-gradient(45deg, white, var(--accent-gold));
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
+  color: white;
   position: relative;
   z-index: 2;
 }
@@ -366,19 +350,19 @@ form[method="GET"] select:focus {
 
 .add-cart-btn,
 .product-card button {
-  background: linear-gradient(45deg, var(--primary-blue), var(--secondary-blue));
+  background: linear-gradient(45deg, var(--primary-blue) 0%, #0056b3 100%);
   color: white;
-  border: none;
+  border: 2px solid rgba(255, 255, 255, 0.2);
   border-radius: 25px;
-  padding: 10px 20px;
-  font-weight: 600;
+  padding: 12px 22px;
+  font-weight: 700;
   cursor: pointer;
   width: 100%;
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   transition: var(--transition);
-  box-shadow: 0 4px 15px rgba(0, 64, 128, 0.3);
+  box-shadow: 0 6px 20px rgba(0, 64, 128, 0.35);
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.8px;
   position: relative;
   overflow: hidden;
 }
@@ -559,20 +543,20 @@ form[method="GET"] select:focus {
 }
 
 .checkout-btn {
-  background: linear-gradient(45deg, var(--success-green), #2ecc71);
+  background: linear-gradient(45deg, var(--success-green) 0%, #2ecc71 100%);
   color: white;
-  padding: 15px;
+  padding: 16px;
   width: 100%;
-  border: none;
+  border: 2px solid rgba(255, 255, 255, 0.2);
   border-radius: 25px;
   cursor: pointer;
   margin-top: 20px;
-  font-size: 1.1rem;
-  font-weight: 700;
+  font-size: 1.15rem;
+  font-weight: 800;
   transition: var(--transition);
-  box-shadow: 0 8px 25px rgba(39, 174, 96, 0.4);
+  box-shadow: 0 8px 28px rgba(39, 174, 96, 0.4);
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: 1.2px;
 }
 
 .checkout-btn:hover {
@@ -946,8 +930,9 @@ form[method="GET"] select:focus {
   top: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(5px);
+  background-color: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
   align-items: center;
   justify-content: center;
 }
@@ -955,49 +940,78 @@ form[method="GET"] select:focus {
 .payment-modal-content {
   background: linear-gradient(145deg, #ffffff 0%, #f8faff 100%);
   border-radius: var(--border-radius);
-  padding: 40px;
-  max-width: 500px;
+  padding: 0;
+  max-width: 550px;
   width: 90%;
   max-height: 90vh;
-  overflow-y: auto;
+  overflow: hidden;
   box-shadow: var(--shadow-heavy);
   position: relative;
-  animation: slideDown 0.3s ease;
+  animation: slideDown 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   display: flex;
   flex-direction: column;
+  border: 2px solid rgba(255, 255, 255, 0.3);
 }
 
 @keyframes slideDown {
   from {
     opacity: 0;
-    transform: translateY(-30px);
+    transform: translateY(-30px) scale(0.95);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(0) scale(1);
   }
 }
 
-.payment-modal-content::-webkit-scrollbar {
+.payment-modal-content h2 {
+  background: linear-gradient(135deg, var(--primary-blue) 0%, #0056b3 100%);
+  color: white;
+  padding: 24px 28px;
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  border-radius: 0;
+  position: relative;
+  overflow: hidden;
+}
+
+.payment-modal-content h2::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(145deg, transparent 0%, rgba(255, 204, 0, 0.1) 100%);
+  pointer-events: none;
+}
+
+.payment-modal-content > div[style*="padding"] {
+  padding: 24px 28px !important;
+  overflow-y: auto;
+}
+
+.payment-modal-content > div[style*="padding"]::-webkit-scrollbar {
   width: 8px;
 }
 
-.payment-modal-content::-webkit-scrollbar-track {
-  background: rgba(0, 64, 128, 0.1);
-  border-radius: 10px;
+.payment-modal-content > div[style*="padding"]::-webkit-scrollbar-track {
+  background: rgba(0, 64, 128, 0.05);
+  border-radius: 4px;
 }
 
-.payment-modal-content::-webkit-scrollbar-thumb {
-  background: linear-gradient(135deg, var(--primary-blue), #0056b3);
-  border-radius: 10px;
+.payment-modal-content > div[style*="padding"]::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, var(--primary-blue), var(--secondary-blue));
+  border-radius: 4px;
 }
 
-.payment-modal-content::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(135deg, #0056b3, var(--primary-blue));
+.payment-modal-content > div[style*="padding"]::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, var(--secondary-blue), #0080ff);
 }
 
 #sizeOptions {
-  max-height: 400px;
+  max-height: 450px;
   overflow-y: auto;
   padding-right: 5px;
 }
@@ -1020,38 +1034,29 @@ form[method="GET"] select:focus {
   background: linear-gradient(135deg, #0056b3, var(--primary-blue));
 }
 
-.payment-modal-content h2 {
-  color: var(--primary-blue);
-  text-align: center;
-  margin-bottom: 30px;
-  font-size: 1.8rem;
-  font-weight: 700;
-  background: transparent;
-  padding: 0;
-}
-
 .payment-close-btn {
   position: absolute;
-  top: 15px;
-  right: 15px;
-  background: linear-gradient(45deg, var(--danger-red), #c0392b);
+  top: 20px;
+  right: 20px;
+  background: rgba(255, 255, 255, 0.2);
   color: white;
   border: none;
   border-radius: 50%;
-  width: 35px;
-  height: 35px;
-  font-size: 20px;
+  width: 40px;
+  height: 40px;
+  font-size: 24px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: var(--transition);
-  box-shadow: 0 2px 8px rgba(231, 76, 60, 0.3);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  z-index: 1;
 }
 
 .payment-close-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
   transform: rotate(90deg) scale(1.1);
-  box-shadow: 0 4px 12px rgba(231, 76, 60, 0.5);
 }
 
 .stock-info {

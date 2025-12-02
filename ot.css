@@ -16,30 +16,18 @@ body {
 .container {
   max-width: 95%;
   width: 95%;
-  margin: 20px auto;
-  background: linear-gradient(145deg, #ffffff 0%, #f8faff 100%);
-  padding: 30px;
-  border-radius: var(--border-radius);
-  box-shadow: var(--shadow-heavy);
+  margin: 15px auto;
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: var(--shadow-light);
   min-height: 90vh;
   display: flex;
   align-items: stretch;
   justify-content: flex-start;
-  gap: 25px;
-  border: 1px solid rgba(255, 255, 255, 0.8);
+  gap: 20px;
+  border: 1px solid rgba(0, 64, 128, 0.1);
   position: relative;
-}
-
-.container::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(145deg, transparent 0%, rgba(255, 204, 0, 0.02) 100%);
-  pointer-events: none;
-  border-radius: var(--border-radius);
 }
 
 /* ==============================
@@ -77,21 +65,22 @@ h3 {
 }
 
 .back-btn {
-  background: linear-gradient(45deg, var(--secondary-blue), #0080ff);
+  background: linear-gradient(45deg, var(--secondary-blue) 0%, #0080ff 100%);
   color: white;
-  padding: 4px 10px;
-  border-radius: 12px;
+  padding: 10px 18px;
+  border-radius: 20px;
   display: inline-block;
   text-decoration: none;
-  font-size: 0.78rem;
-  font-weight: 600;
+  font-size: 0.85rem;
+  font-weight: 700;
   margin-bottom: 14px;
   transition: var(--transition);
-  box-shadow: 0 1px 6px rgba(0, 102, 204, 0.18);
+  box-shadow: 0 6px 18px rgba(0, 102, 204, 0.35);
   text-transform: uppercase;
-  letter-spacing: 0.3px;
+  letter-spacing: 0.6px;
   position: relative;
   overflow: hidden;
+  border: 2px solid rgba(255, 255, 255, 0.2);
 }
 
 .back-btn::before {

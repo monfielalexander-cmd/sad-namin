@@ -144,7 +144,6 @@ $transactions = $conn->query($query);
             <th>Contact</th>
             <th>Total</th>
             <th>Date</th>
-            <th>Status</th>
             <th>Items</th>
             <th>Action</th>
         </tr>
@@ -185,15 +184,10 @@ $transactions = $conn->query($query);
                             <span class="text-muted">—</span>
                         <?php endif; ?>
                     </td>
-                    <td><?= htmlspecialchars($row['delivery_address'] ?? 'N/A') ?></td>
+                    <td><?= htmlspecialchars(strtolower($row['order_type']) === 'pickup' ? 'Pickup' : ($row['delivery_address'] ?? 'N/A')) ?></td>
                     <td><?= htmlspecialchars($row['contact_number'] ?? 'N/A') ?></td>
                     <td>₱<?= number_format($row['total_amount'], 2) ?></td>
                     <td><?= htmlspecialchars($row['transaction_date']) ?></td>
-                    <td>
-                        <span class="status-badge <?= strtolower($row['status']) ?>">
-                            <?= htmlspecialchars($row['status']) ?>
-                        </span>
-                    </td>
                     <td>
                         <button class="view-items" data-items='<?= htmlspecialchars(json_encode($items), ENT_QUOTES) ?>'>View</button>
                     </td>
@@ -201,14 +195,14 @@ $transactions = $conn->query($query);
                         <label class="switch">
                             <input type="checkbox" class="status-toggle" 
                                    data-id="<?= $row['transaction_id'] ?>"
-                                   <?= $isSuccess ? 'checked' : '' ?>>
+                                   <?= $isSuccess ? 'checked disabled' : '' ?>>
                             <span class="slider"></span>
                         </label>
                     </td>
                 </tr>
             <?php endwhile; ?>
         <?php else: ?>
-            <tr><td colspan="11">No transactions found.</td></tr>
+            <tr><td colspan="10">No transactions found.</td></tr>
         <?php endif; ?>
     </table>
 
@@ -268,6 +262,11 @@ function copyToClipboard(text) {
 
 document.querySelectorAll('.status-toggle').forEach(toggle => {
     toggle.addEventListener('change', function() {
+        // Prevent toggling if already disabled (Success state)
+        if (this.disabled) {
+            return;
+        }
+        
         const transactionId = this.dataset.id;
         const newStatus = this.checked ? 'Success' : 'Pending';
         
@@ -283,9 +282,10 @@ document.querySelectorAll('.status-toggle').forEach(toggle => {
         .then(res => res.json())
         .then(data => {
             if (data.success) {
-                const badge = this.closest('tr').querySelector('.status-badge');
-                badge.textContent = newStatus;
-                badge.className = 'status-badge ' + newStatus.toLowerCase();
+                // If set to Success, disable the toggle to prevent further changes
+                if (newStatus === 'Success') {
+                    this.disabled = true;
+                }
             }
         });
     });

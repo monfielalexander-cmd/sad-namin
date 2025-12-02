@@ -14,6 +14,10 @@
   --shadow-heavy: 0 12px 35px rgba(0, 64, 128, 0.2);
   --transition: all 0.3s ease;
   --border-radius: 12px;
+  --success-color: #27ae60;
+  --danger-color: #e74c3c;
+  --warning-color: #f39c12;
+  --info-color: #3498db;
 }
 
 * {
@@ -42,11 +46,12 @@ nav {
   align-items: center;
   background: linear-gradient(135deg, var(--primary-blue) 0%, #0056b3 100%);
   color: white;
-  padding: 20px 40px;
-  box-shadow: var(--shadow-medium);
+  padding: 16px 40px;
+  box-shadow: var(--shadow-heavy);
   backdrop-filter: blur(10px);
   position: relative;
   z-index: 100;
+  transition: var(--transition);
 }
 
 nav::before {
@@ -122,13 +127,16 @@ nav .menu span {
 }
 
 nav .menu a.logout-btn {
-  background: linear-gradient(45deg, var(--accent-gold), #ffd700);
+  background: linear-gradient(45deg, var(--accent-gold) 0%, #ffd700 100%);
   color: var(--primary-blue);
-  padding: 10px 20px;
+  padding: 12px 24px;
   border-radius: 25px;
-  font-weight: 700;
+  font-weight: 800;
   transition: var(--transition);
-  box-shadow: 0 4px 15px rgba(255, 204, 0, 0.3);
+  box-shadow: 0 6px 20px rgba(255, 204, 0, 0.4);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
 }
 
 nav .menu a.logout-btn:hover {
@@ -206,7 +214,7 @@ header p {
 }
 
 header button {
-  background: linear-gradient(45deg, var(--accent-gold), #ffd700);
+  background: linear-gradient(45deg, var(--accent-gold) 0%, #ffd700 100%);
   border: none;
   padding: 15px 35px;
   font-size: 1.1rem;
@@ -215,16 +223,38 @@ header button {
   font-weight: 700;
   transition: var(--transition);
   box-shadow: 0 8px 25px rgba(255, 204, 0, 0.4);
-  animation: fadeInUp 1s ease-out 0.6s both;
+  animation: fadeInUp 0.8s ease-out 0.5s both;
   color: var(--primary-blue);
   text-transform: uppercase;
   letter-spacing: 1px;
+  position: relative;
+  overflow: hidden;
+}
+
+header button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+  transition: left 0.6s ease;
+}
+
+header button:hover::before {
+  left: 100%;
 }
 
 header button:hover {
-  background: linear-gradient(45deg, #ffd700, var(--accent-gold));
-  transform: translateY(-5px) scale(1.05);
-  box-shadow: 0 15px 35px rgba(255, 204, 0, 0.6);
+  background: linear-gradient(45deg, #ffd700 0%, var(--accent-gold) 100%);
+  transform: translateY(-4px) scale(1.06);
+  box-shadow: 0 16px 40px rgba(255, 204, 0, 0.6);
+}
+
+header button:focus {
+  outline: 3px solid rgba(255, 204, 0, 0.3);
+  outline-offset: 3px;
 }
 
 header button:active {
@@ -381,7 +411,7 @@ header button:active {
 }
 
 .carousel-nav button {
-  background: linear-gradient(45deg, var(--primary-blue), var(--secondary-blue));
+  background: linear-gradient(45deg, var(--primary-blue) 0%, #0056b3 100%);
   color: white;
   border: none;
   border-radius: 50%;
@@ -494,11 +524,12 @@ header button:active {
 
 #about .about-text h2 {
   color: var(--primary-blue);
-  font-size: 2.5rem;
+  font-size: 2.8rem;
   font-weight: 800;
   margin-bottom: 25px;
-  text-shadow: 2px 2px 4px rgba(0, 64, 128, 0.1);
+  text-shadow: 2px 2px 8px rgba(0, 64, 128, 0.15);
   position: relative;
+  letter-spacing: 0.4px;
 }
 
 #about .about-text h2::after {
@@ -715,16 +746,40 @@ p .pmodal a {
 
 .modal-content {
   background: linear-gradient(145deg, #ffffff 0%, #f8faff 100%);
-  padding: 25px;
+  padding: 18px;
   border-radius: 18px;
   width: 360px;
   max-width: 90vw;
+  max-height: 90vh;
+  overflow-y: auto;
   box-shadow: 0 25px 60px rgba(0, 64, 128, 0.3);
   text-align: center;
   color: var(--text-dark);
   animation: modalSlideIn 0.4s ease-out;
   border: 1px solid rgba(255, 255, 255, 0.8);
   position: relative;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 64, 128, 0.3) rgba(0, 64, 128, 0.05);
+}
+
+.modal-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.modal-content::-webkit-scrollbar-track {
+  background: rgba(0, 64, 128, 0.05);
+  border-radius: 10px;
+  margin: 8px 0;
+}
+
+.modal-content::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, rgba(0, 64, 128, 0.4) 0%, rgba(0, 64, 128, 0.6) 100%);
+  border-radius: 10px;
+  border: 2px solid rgba(248, 250, 255, 0.3);
+}
+
+.modal-content::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, rgba(0, 64, 128, 0.6) 0%, rgba(0, 64, 128, 0.8) 100%);
 }
 
 .modal-content::before {
@@ -739,7 +794,7 @@ p .pmodal a {
 }
 
 .modal-content h2 {
-  margin-bottom: 20px;
+  margin-bottom: 15px;
   color: var(--primary-blue);
   font-size: 1.6rem;
   font-weight: 700;
